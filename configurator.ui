@@ -398,7 +398,7 @@ QRadioButton:checked {
       <x>10</x>
       <y>50</y>
       <width>181</width>
-      <height>385</height>
+      <height>344</height>
      </rect>
     </property>
     <property name="font">
@@ -721,6 +721,61 @@ QRadioButton:checked {
      </property>
      <property name="text">
       <string>WebSocket</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QGroupBox" name="dev_groupBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>393</y>
+      <width>181</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color:#4C5844;
+border: 1px solid #7A836E;
+margin: 0px 0px 10px 10px;</string>
+    </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QCheckBox" name="auto_update_checkBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>1</y>
+       <width>171</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QCheckBox {
+	border: 0px solid black;
+	margin: 0px 0px 0px 12px;
+	background-color: rgba(255, 255, 255, 0);
+}
+QCheckBox:hover {
+	color: #B8B857;
+}
+QCheckBox:checked {
+	color: #B8B857;
+}</string>
+     </property>
+     <property name="text">
+      <string>Auto-Update</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
      </property>
     </widget>
    </widget>

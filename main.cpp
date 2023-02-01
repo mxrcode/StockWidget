@@ -107,6 +107,8 @@ int main(int argc, char *argv[])
     QString text_style = "color:rgba(255, 255, 255, 0.65);";
     QString widget_position = "1,0";
 
+    bool auto_update = 1;
+
     // DATA
     QVector<QString> symbol_list;
     QFile file(CONFIG_NAME);
@@ -138,6 +140,18 @@ int main(int argc, char *argv[])
 
                 continue;
             }
+            if (tmp.startsWith("$auto_update:")) {
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$auto_update:", "");
+
+                auto_update = tmp.toInt();
+
+                continue;
+            }
 
             symbol_list.append(tmp);
         }
@@ -162,6 +176,7 @@ int main(int argc, char *argv[])
           fout << Qt::endl;
           fout << "$text_style:color:rgba(255, 255, 255, 0.65);" << Qt::endl;
           fout << "$position:" << widget_position << Qt::endl;
+          fout << "$auto_update:" << "1" << Qt::endl;
           fout << Qt::endl;
 
           for (QString symbol : symbol_list) {

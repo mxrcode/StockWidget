@@ -56,6 +56,18 @@ Configurator::Configurator(QWidget *parent) :
 
                 continue;
             }
+            if (tmp.startsWith("$auto_update:")) { // WIDGET AUTO-UPDATE
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$auto_update:", "");
+
+                m_auto_update = tmp;
+
+                continue;
+            }
 
             symbol_list.append(tmp);
         }
@@ -88,6 +100,9 @@ Configurator::Configurator(QWidget *parent) :
         t_text_style.replace("0.65", "1"); // Change Opacity for visual color accuracy
         ui->currentColor_label->setStyleSheet(ui->currentColor_label->styleSheet() + t_text_style);
 
+        // autoUpdate
+        ui->auto_update_checkBox->setChecked(m_auto_update.toInt());
+
         warning_ui = new WarningUi;
         connect(this, &Configurator::setWarningUiText, warning_ui, &WarningUi::setTextBrowser);
     }
@@ -115,8 +130,9 @@ void Configurator::on_applyButton_clicked()
       fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair." << Qt::endl;
       fout << "// We use the Binance Api to get the exchange rate and other data on trading pairs." << Qt::endl;
       fout << Qt::endl;
-      fout << "$text_style: " << m_text_style << Qt::endl;
+      fout << "$text_style:" << m_text_style << Qt::endl;
       fout << "$position:" << m_widget_position << Qt::endl;
+      fout << "$auto_update:" << m_auto_update << Qt::endl;
       fout << Qt::endl;
 
       QVector<QString> symbol_list = ui->symbol_textEdit->toPlainText().split("\n");
@@ -146,7 +162,7 @@ void Configurator::on_applyButton_clicked()
       // Close the current instance
       qApp->quit();
     } else {
-        emit setWarningUiText("Unknown error when trying to open file \"config.cfg\". Make sure the file exists and that you have permission to write to it.");
+        emit setWarningUiText("Unknown error when trying to open file \"" + CONFIG_NAME + "\". Make sure the file exists and that you have permission to write to it.");
         warning_ui->show();
     }
 }
@@ -179,3 +195,6 @@ void Configurator::on_widgetPosition_radioButton__1_clicked() {m_widget_position
 void Configurator::on_widgetPosition_radioButton__2_clicked() {m_widget_position = "0,1";}
 void Configurator::on_widgetPosition_radioButton__3_clicked() {m_widget_position = "1,0";}
 void Configurator::on_widgetPosition_radioButton__4_clicked() {m_widget_position = "1,1";}
+
+// autoUpdate
+void Configurator::on_auto_update_checkBox_stateChanged(int arg1) {m_auto_update = (ui->auto_update_checkBox->isChecked()) ? "1" : "0";}
