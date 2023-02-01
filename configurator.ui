@@ -398,7 +398,7 @@ QRadioButton:checked {
       <x>10</x>
       <y>50</y>
       <width>181</width>
-      <height>344</height>
+      <height>304</height>
      </rect>
     </property>
     <property name="font">
@@ -728,9 +728,9 @@ QRadioButton:checked {
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>393</y>
+      <y>353</y>
       <width>181</width>
-      <height>41</height>
+      <height>81</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -745,7 +745,7 @@ margin: 0px 0px 10px 10px;</string>
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>1</y>
+       <y>6</y>
        <width>171</width>
        <height>31</height>
       </rect>
@@ -773,6 +773,43 @@ QCheckBox:checked {
      </property>
      <property name="checked">
       <bool>true</bool>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="use_binance_us_checkBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>35</y>
+       <width>171</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QCheckBox {
+	border: 0px solid black;
+	margin: 0px 0px 0px 12px;
+	background-color: rgba(255, 255, 255, 0);
+}
+QCheckBox:hover {
+	color: #B8B857;
+}
+QCheckBox:checked {
+	color: #B8B857;
+}</string>
+     </property>
+     <property name="text">
+      <string>Binance.US API</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
      </property>
      <property name="tristate">
       <bool>false</bool>

@@ -56,7 +56,7 @@ Configurator::Configurator(QWidget *parent) :
 
                 continue;
             }
-            if (tmp.startsWith("$auto_update:")) { // WIDGET AUTO-UPDATE
+            if (tmp.startsWith("$auto_update:")) { // AUTO-UPDATE
 
                 // Delete comments after "//"
                 int index = tmp.indexOf("//");
@@ -65,6 +65,18 @@ Configurator::Configurator(QWidget *parent) :
                 tmp.replace("$auto_update:", "");
 
                 m_auto_update = tmp;
+
+                continue;
+            }
+            if (tmp.startsWith("$use_binance_us:")) { // USE BINANCE.US API
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$use_binance_us:", "");
+
+                m_use_binance_us = tmp;
 
                 continue;
             }
@@ -103,6 +115,9 @@ Configurator::Configurator(QWidget *parent) :
         // autoUpdate
         ui->auto_update_checkBox->setChecked(m_auto_update.toInt());
 
+        // Binance.US API
+        ui->use_binance_us_checkBox->setChecked(m_use_binance_us.toInt());
+
         warning_ui = new WarningUi;
         connect(this, &Configurator::setWarningUiText, warning_ui, &WarningUi::setTextBrowser);
     }
@@ -133,6 +148,7 @@ void Configurator::on_applyButton_clicked()
       fout << "$text_style:" << m_text_style << Qt::endl;
       fout << "$position:" << m_widget_position << Qt::endl;
       fout << "$auto_update:" << m_auto_update << Qt::endl;
+      fout << "$use_binance_us:" << m_use_binance_us << Qt::endl;
       fout << Qt::endl;
 
       QVector<QString> symbol_list = ui->symbol_textEdit->toPlainText().split("\n");
@@ -198,3 +214,5 @@ void Configurator::on_widgetPosition_radioButton__4_clicked() {m_widget_position
 
 // autoUpdate
 void Configurator::on_auto_update_checkBox_stateChanged(int arg1) {m_auto_update = (ui->auto_update_checkBox->isChecked()) ? "1" : "0";}
+// Binance.US API
+void Configurator::on_use_binance_us_checkBox_stateChanged(int arg1) {m_use_binance_us = (ui->use_binance_us_checkBox->isChecked()) ? "1" : "0";}

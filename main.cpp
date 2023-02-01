@@ -108,6 +108,7 @@ int main(int argc, char *argv[])
     QString widget_position = "1,0";
 
     bool auto_update = 1;
+    bool use_binance_us = 0;
 
     // DATA
     QVector<QString> symbol_list;
@@ -152,6 +153,18 @@ int main(int argc, char *argv[])
 
                 continue;
             }
+            if (tmp.startsWith("$use_binance_us:")) {
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$use_binance_us:", "");
+
+                use_binance_us = tmp.toInt();
+
+                continue;
+            }
 
             symbol_list.append(tmp);
         }
@@ -167,24 +180,31 @@ int main(int argc, char *argv[])
 
         // Open the file for writing.
         if (file.open(QFile::WriteOnly | QFile::Text)) {
-          // The file was opened successfully.
-          QTextStream fout(&file);
+            // The file was opened successfully.
+            QTextStream fout(&file);
 
-          // Write default config to the file.
-          fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair." << Qt::endl;
-          fout << "// We use the Binance Api to get the exchange rate and other data on trading pairs." << Qt::endl;
-          fout << Qt::endl;
-          fout << "$text_style:color:rgba(255, 255, 255, 0.65);" << Qt::endl;
-          fout << "$position:" << widget_position << Qt::endl;
-          fout << "$auto_update:" << "1" << Qt::endl;
-          fout << Qt::endl;
+            // Write default config to the file.
+            fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair." << Qt::endl;
+            fout << "// We use the Binance Api to get the exchange rate and other data on trading pairs." << Qt::endl;
+            fout << Qt::endl;
+            fout << "$text_style:color:rgba(255, 255, 255, 0.65);" << Qt::endl;
+            fout << "$position:" << widget_position << Qt::endl;
+            fout << "$auto_update:" << "1" << Qt::endl;
+            fout << "$use_binance_us:" << "0" << Qt::endl;
+            fout << Qt::endl;
 
-          for (QString symbol : symbol_list) {
-            fout << symbol << Qt::endl;
-          }
+            for (QString symbol : symbol_list) {
+              fout << symbol << Qt::endl;
+            }
 
-          // Close the file.
-          file.close();
+            // Close the file.
+            file.close();
+
+            // Start a new instance of the application
+            QProcess::startDetached(qApp->applicationFilePath());
+
+            // Close the current instance
+            return 0;
         } else {
             return -1;
         }
@@ -306,15 +326,7 @@ int main(int argc, char *argv[])
         // Create a network manager.
         QNetworkAccessManager manager;
 
-        QString binance_domain;
-        QString option_binance_domain = "global"; // This line exists because the regular Binance API doesn't work in the US
-
-        if (option_binance_domain == "global") {
-            binance_domain = "api.binance.com";
-        } else if (option_binance_domain == "us") {
-            binance_domain = "api.binance.us";
-        }
-
+        QString binance_domain = (use_binance_us) ? "api.binance.us" : "api.binance.com";
         QNetworkRequest request(QUrl("https://" + binance_domain + "/api/v3/ticker/24hr?symbols=" + json_string));
         auto *reply = manager.get(request);
 

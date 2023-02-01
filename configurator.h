@@ -66,6 +66,7 @@ private slots:
     void on_widgetPosition_radioButton__4_clicked();
 
     void on_auto_update_checkBox_stateChanged(int arg1);
+    void on_use_binance_us_checkBox_stateChanged(int arg1);
 
 private:
     Ui::Configurator *ui;
@@ -74,6 +75,7 @@ private:
     // Data
     QString m_widget_position;
     QString m_auto_update;
+    QString m_use_binance_us;
     QString m_text_style;
     QString m_symbols_string;
 
