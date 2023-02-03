@@ -146,6 +146,57 @@ void file_remover (QString file_name) {
     return;
 }
 
+bool is_soft_in_autorun()
+{
+    HKEY hKey;
+    DWORD dwType = REG_SZ;
+    TCHAR szPath[MAX_PATH];
+    DWORD dwSize = sizeof(szPath);
+
+    // Open the autorun registry key
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_QUERY_VALUE, &hKey) == ERROR_SUCCESS)
+    {
+        // Check if the program is in the autorun list
+        if (RegQueryValueEx(hKey, TEXT(dSOFT_NAME), 0, &dwType, (LPBYTE)&szPath, &dwSize) == ERROR_SUCCESS)
+        {
+            RegCloseKey(hKey);
+            return true;
+        }
+        RegCloseKey(hKey);
+    }
+    return false;
+}
+
+void add_soft_to_autorun()
+{
+    HKEY hKey;
+    DWORD dwSize = (wcslen(QString(qApp->applicationFilePath()).toStdWString().c_str()) + 1) * sizeof(wchar_t);
+
+    // Open the autorun registry key
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS)
+    {
+        QString qs_path = qApp->applicationFilePath();
+        qs_path.replace("/", "\\");
+
+        // Add the program to the autorun list
+        RegSetValueEx(hKey, TEXT(dSOFT_NAME), 0, REG_SZ, (LPBYTE)QString(qs_path).toStdWString().c_str(), dwSize);
+        RegCloseKey(hKey);
+    }
+}
+
+void remove_soft_from_autorun()
+{
+    HKEY hKey;
+
+    // Open the autorun registry key
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS)
+    {
+        // Remove the program from the autorun list
+        RegDeleteValue(hKey, TEXT(dSOFT_NAME));
+        RegCloseKey(hKey);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -204,6 +255,19 @@ int main(int argc, char *argv[])
 
         // Close the current instance
         qApp->quit();
+    });
+
+    // Add a "Autorun" action with CheckBox to the menu
+    QAction *autorunAction = trayMenu.addAction("Autorun");
+    autorunAction->setCheckable(true);
+    autorunAction->setChecked(is_soft_in_autorun());
+    // Add the action to toggle autorun to the tray menu
+    QObject::connect(autorunAction, &QAction::toggled, [&](bool checked) {
+        if (autorunAction->isChecked()) {
+            add_soft_to_autorun();
+        } else {
+            remove_soft_from_autorun();
+        }
     });
 
     // Separator

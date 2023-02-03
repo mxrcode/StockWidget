@@ -3,7 +3,9 @@
 
 #include <QString>
 
-const QString SOFT_NAME = "StockWidget";
+#define dSOFT_NAME "StockWidget"
+
+const QString SOFT_NAME = dSOFT_NAME;
 const QString SOFT_VERSION = "1.0.1";
 const QString CONFIG_NAME = "config.cfg";
 
