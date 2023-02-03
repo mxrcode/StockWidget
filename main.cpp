@@ -1,6 +1,100 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+QString get_hwid() {
+    DWORD serialNum = 0;
+    GetVolumeInformation(_T("C:\\"), NULL, 0, &serialNum, NULL, NULL, NULL, 0);
+    return QString::number(serialNum);
+}
+
+QString get_client_id() {
+    return "client[" + get_hwid() + "]";
+}
+
+long version_convert(QString version) {
+    QStringList parts = version.split(".");
+    int major = parts.at(0).toInt();
+    int minor = parts.at(1).toInt();
+    int patch = parts.at(2).toInt();
+    return major * 1000000 + minor * 10000 + patch * 100;
+}
+
+struct UpdateInfo {
+    QString status;
+    QString endpoint;
+    long latest_version;
+    QString latest_version_string;
+    bool update_available;
+    QString update_url;
+    QString update_url_sha256;
+    QString user_ip;
+};
+
+UpdateInfo getUpdateInfo()
+{
+    UpdateInfo info;
+
+    try {
+
+        QNetworkAccessManager *manager = new QNetworkAccessManager();
+        QUrl url("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/v1/getUpdate");
+        QNetworkRequest request(url);
+        QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[get_update_info]";
+        request.setRawHeader("User-Agent", user_agent.toUtf8());
+
+        QNetworkReply *reply = manager->get(request);
+        QEventLoop loop;
+        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        loop.exec();
+
+        QByteArray data = reply->readAll();
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
+        QJsonObject jsonObj = jsonDoc.object();
+
+        QString status = jsonObj.value("status").toString();
+
+        if (status == "OK") {
+            // Get values from JSON object
+            info.status = status;
+            info.endpoint = jsonObj.value("endpoint").toString();
+            info.latest_version = jsonObj.value("latest_version").toInt();
+            info.latest_version_string = jsonObj.value("latest_version_string").toString();
+            info.update_available = (bool)jsonObj.value("update_available").toString().toInt();
+            info.update_url = jsonObj.value("update_url").toString();
+            info.update_url_sha256 = jsonObj.value("update_url_sha256").toString();
+            info.user_ip = jsonObj.value("user-ip").toString();
+        }
+
+        reply->deleteLater();
+
+    } catch (...) {
+    }
+
+    return info;
+}
+
+QString sha256_by_link(QString s_url) {
+
+    QNetworkAccessManager manager;
+    QUrl url(s_url);
+    QNetworkRequest request(url);
+    QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[download_sha256]";
+    request.setRawHeader("User-Agent", user_agent.toUtf8());
+    QNetworkReply *reply = manager.get(request);
+
+    // Wait for the request to complete
+    QEventLoop eventLoop;
+    QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
+    eventLoop.exec();
+
+    QString t_sha256 = reply->readAll();
+    int length = t_sha256.indexOf(" ");
+    QString sha256 = t_sha256.left(length);
+
+    return sha256.trimmed();
+
+}
+
 QString digit_format (QString number, int decimal_places = 2) {
 
     QStringList parts = number.split(".");
@@ -26,9 +120,59 @@ QString digit_format (QString number, int decimal_places = 2) {
     return number;
 }
 
+void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) // Part for outputting debug info to qInfo.log
+{
+    QFile logFile("qInfo.log");
+    if (logFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        QTextStream stream(&logFile);
+        QString t_msg = QDateTime::currentDateTime().toString() + " : " + msg;
+        stream << t_msg << Qt::endl;
+    }
+}
+
+void file_remover (QString file_name) {
+    QFile file(file_name);
+    if (file.exists()) {
+        bool result = file.remove();
+        if (result) {
+            qInfo() << "File" << file_name << "was successfully deleted.";
+        } else {
+            qInfo() << "Could not delete file" << file_name << ".";
+        }
+    } else {
+        qInfo() << "File" << file_name << "does not exist.";
+    }
+
+    return;
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
+
+    // Update Block: if the filename of the current instance is new.exe, move me from new.exe to StockWidget.exe (with 1 second sleep)
+    if (qApp->applicationName() == "new") {
+
+        QThread::msleep(3000);
+
+        QString current_file = qApp->applicationFilePath();
+        QFile file(current_file);
+        QString new_file = "StockWidget.exe";
+
+        file_remover(new_file);
+
+        if (file.rename(new_file)) {
+            qInfo() << "File renamed successfully.";
+        } else {
+            qInfo() << "File rename failed.";
+        }
+        // Start a new instance of the application with close current
+        QProcess::startDetached(qApp->applicationDirPath() + "/StockWidget.exe");
+
+        return 0;
+    }
 
     // Create a tray icon and a menu
     QSystemTrayIcon trayIcon;
@@ -209,6 +353,106 @@ int main(int argc, char *argv[])
             return -1;
         }
     }
+
+    // Auto-Update Block
+    UpdateInfo info = getUpdateInfo();
+
+    QFuture<int> future_update = QtConcurrent::run([&]() {
+
+        QThread::msleep(1000);
+
+        try {
+            if (info.update_available == true && version_convert(SOFT_VERSION) < info.latest_version && auto_update == 1) { // Rewrite for async use
+
+                QNetworkAccessManager manager;
+                QNetworkRequest request(QUrl(info.update_url));
+                QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[download_update]";
+                request.setRawHeader("User-Agent", user_agent.toUtf8());
+                QNetworkReply *reply = manager.get(request);
+
+                // Wait for the request to complete
+                QEventLoop eventLoop;
+                QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
+                eventLoop.exec();
+
+                if (reply->error() != QNetworkReply::NoError) {
+                    qInfo() << "Error downloading file:" << reply->errorString();
+                    return -1;
+                }
+
+                QByteArray zip_data = reply->readAll();
+                QTemporaryFile temp_file;
+                if (!temp_file.open()) {
+                    qInfo() << "Error creating temp file:" << temp_file.errorString();
+                    return -1;
+                }
+                temp_file.write(zip_data);
+                temp_file.close();
+
+                // Calculate SHA256 of the downloaded zip file
+                QCryptographicHash hash(QCryptographicHash::Sha256);
+                hash.addData(zip_data);
+                QString calculated_sha256 = hash.result().toHex();
+
+                // Compare calculated sha256 with the sha256 from the update info
+                if (calculated_sha256 != sha256_by_link(info.update_url_sha256)) {
+                    qInfo() << "SHA256 doesn't match. Downloaded file might be corrupted.";
+                    return -1;
+                }
+
+                unzFile zip_file = unzOpen(temp_file.fileName().toUtf8().constData());
+
+                int ret = unzLocateFile(zip_file, "new.exe", 0);
+                if (ret != UNZ_OK) {
+                    qInfo() << "Error locating new.exe in zip archive";
+                    unzClose(zip_file);
+                    return -1;
+                }
+
+                ret = unzOpenCurrentFile(zip_file);
+                if (ret != UNZ_OK) {
+                    qInfo() << "Error opening new.exe in zip archive";
+                    unzClose(zip_file);
+                    return -1;
+                }
+
+                QFile outFile("new.exe");
+                if (!outFile.open(QIODevice::WriteOnly)) {
+                    qInfo() << "Error creating file new.exe";
+                    unzCloseCurrentFile(zip_file);
+                    unzClose(zip_file);
+                    return -1;
+                }
+
+                char buffer[4096];
+                int readBytes;
+                do {
+                    readBytes = unzReadCurrentFile(zip_file, buffer, sizeof(buffer));
+                    if (readBytes < 0) {
+                        qInfo() << "Error reading new.exe from zip archive";
+                        unzCloseCurrentFile(zip_file);
+                        unzClose(zip_file);
+                        outFile.close();
+                        return -1;
+                    }
+                    outFile.write(buffer, readBytes);
+                } while (readBytes > 0);
+
+                unzCloseCurrentFile(zip_file);
+                unzClose(zip_file);
+                outFile.close();
+
+                // Start a new instance of the application with close current
+                QProcess::startDetached(qApp->applicationDirPath() + "/new.exe");
+
+                qApp->exit(0);
+
+            }
+        } catch (...) {
+        }
+
+        return 0;
+    });
 
     // Create the main window
     MainWindow mainWindow;

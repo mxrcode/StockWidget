@@ -742,6 +742,9 @@ margin: 0px 0px 10px 10px;</string>
      <string/>
     </property>
     <widget class="QCheckBox" name="auto_update_checkBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -770,6 +773,9 @@ QCheckBox:checked {
      </property>
      <property name="text">
       <string>Auto-Update</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
      </property>
      <property name="checked">
       <bool>true</bool>

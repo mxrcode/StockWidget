@@ -5,6 +5,7 @@
 
 #include <QMainWindow>
 #include <QWidget>
+#include <QPushButton>
 #include <QApplication>
 #include <QUrl>
 #include <QJsonDocument>
@@ -34,7 +35,9 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QPushButton>
+#include <QTemporaryFile>
+#include <QtConcurrent>
+#include <QCryptographicHash>
 
 #include "qvlabel.hpp"
 
@@ -44,6 +47,10 @@
 #include "warningui.h"
 
 #include <Windows.h>
+#include <tchar.h>
+#include <string>
+
+#include <unzip.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
