@@ -98,20 +98,20 @@ QString sha256_by_link(QString s_url) {
 QString digit_format (QString number, int decimal_places = 2) {
 
     QStringList parts = number.split(".");
-    QString decimalPart = parts[1];
-    decimalPart.chop(decimalPart.size() - decimal_places);
-    number = parts[0] + "." + decimalPart;
+    QString decimal_part = parts[1];
+    decimal_part.chop(decimal_part.size() - decimal_places);
+    number = parts[0] + "." + decimal_part;
 
     // Insert a space every 3 digits
-    int dotIndex = number.indexOf(".");
-    if (dotIndex == -1) return number; // number doesn't contain a dot
+    int dot_index = number.indexOf(".");
+    if (dot_index == -1) return number; // number doesn't contain a dot
 
-    for (int i = dotIndex - 3; i > 0; i -= 3) {
+    for (int i = dot_index - 3; i > 0; i -= 3) {
         number.insert(i, ' ');
     }
 
     // Trim trailing zeros after dot
-    while (number.endsWith("0") && number.at(dotIndex + 1) != '\0') {
+    while (number.endsWith("0") && number.at(dot_index + 1) != '\0') {
         if (number.at(number.size()-3) == '.') break;
         number.chop(1);
     }
