@@ -122,9 +122,9 @@ QString digit_format (QString number, int decimal_places = 2) {
 
 void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) // Part for outputting debug info to qInfo.log
 {
-    QFile logFile("qInfo.log");
-    if (logFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
-        QTextStream stream(&logFile);
+    QFile log_file("qInfo.log");
+    if (log_file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        QTextStream stream(&log_file);
         QString t_msg = QDateTime::currentDateTime().toString() + " : " + msg;
         stream << t_msg << Qt::endl;
     }
@@ -173,12 +173,12 @@ void add_soft_to_autorun(QApplication &app) { // Another way to create .lnk in W
     CoInitialize(NULL);
     HRESULT result = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, reinterpret_cast<void**>(&shell_link));
     if (result == S_OK) {
-        IPersistFile *persistFile;
+        IPersistFile *persist_file;
         shell_link->SetPath(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(app.applicationFilePath()).utf16()));
-        result = shell_link->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&persistFile));
+        result = shell_link->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&persist_file));
         if (result == S_OK) {
-            persistFile->Save(reinterpret_cast<const wchar_t *>(lnk_path.utf16()), TRUE);
-            persistFile->Release();
+            persist_file->Save(reinterpret_cast<const wchar_t *>(lnk_path.utf16()), TRUE);
+            persist_file->Release();
         }
         shell_link->Release();
     }
