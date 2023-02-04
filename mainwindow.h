@@ -38,6 +38,7 @@
 #include <QTemporaryFile>
 #include <QtConcurrent>
 #include <QCryptographicHash>
+#include <QStandardPaths>
 
 #include "qvlabel.hpp"
 
@@ -49,6 +50,8 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <string>
+
+#include <shlobj.h>
 
 #include <unzip.h>
 

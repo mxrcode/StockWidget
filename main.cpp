@@ -148,6 +148,57 @@ void file_remover (QString file_name) {
 
 bool is_soft_in_autorun()
 {
+    QString startup_dir = QDir::toNativeSeparators(QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).first()) + QDir::separator() + "Startup" + QDir::separator();
+    QString lnk_path = startup_dir + SOFT_NAME + ".lnk";
+
+    QFile link(lnk_path);
+    if (link.exists()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void add_soft_to_autorun(QApplication &app) { // Another way to create .lnk in Windows
+
+    QString startup_dir = QDir::toNativeSeparators(QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).first()) + QDir::separator() + "Startup" + QDir::separator();
+    QString lnk_path = startup_dir + SOFT_NAME + ".lnk";
+
+    QFile link(lnk_path);
+    if (link.exists()) {
+        link.remove();
+    }
+
+    IShellLink *shell_link;
+    CoInitialize(NULL);
+    HRESULT result = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, reinterpret_cast<void**>(&shell_link));
+    if (result == S_OK) {
+        IPersistFile *persistFile;
+        shell_link->SetPath(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(app.applicationFilePath()).utf16()));
+        result = shell_link->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&persistFile));
+        if (result == S_OK) {
+            persistFile->Save(reinterpret_cast<const wchar_t *>(lnk_path.utf16()), TRUE);
+            persistFile->Release();
+        }
+        shell_link->Release();
+    }
+    CoUninitialize();
+}
+
+void remove_soft_from_autorun()
+{
+    QString startup_dir = QDir::toNativeSeparators(QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).first()) + QDir::separator() + "Startup" + QDir::separator();
+    QString lnk_path = startup_dir + SOFT_NAME + ".lnk";
+
+    QFile link(lnk_path);
+    if (link.exists()) {
+        link.remove();
+    }
+}
+
+/* Part of the code causing problems in work : Widget not starts automatically
+bool is_soft_in_autorun()
+{
     HKEY hKey;
     DWORD dwType = REG_SZ;
     TCHAR szPath[MAX_PATH];
@@ -175,8 +226,7 @@ void add_soft_to_autorun()
     // Open the autorun registry key
     if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS)
     {
-        QString qs_path = qApp->applicationFilePath();
-        qs_path.replace("/", "\\");
+        QString qs_path = QDir::toNativeSeparators(qApp->applicationFilePath());
 
         // Add the program to the autorun list
         RegSetValueEx(hKey, TEXT(dSOFT_NAME), 0, REG_SZ, (LPBYTE)QString(qs_path).toStdWString().c_str(), dwSize);
@@ -196,6 +246,7 @@ void remove_soft_from_autorun()
         RegCloseKey(hKey);
     }
 }
+*/
 
 int main(int argc, char *argv[])
 {
@@ -203,7 +254,7 @@ int main(int argc, char *argv[])
 
     qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
 
-    // Update Block: if the filename of the current instance is new.exe, move me from new.exe to StockWidget.exe (with 1 second sleep)
+    // Update Block : if the filename of the current instance is new.exe, move me from new.exe to StockWidget.exe (with 1 second sleep)
     if (qApp->applicationName() == "new") {
 
         QThread::msleep(3000);
@@ -264,7 +315,7 @@ int main(int argc, char *argv[])
     // Add the action to toggle autorun to the tray menu
     QObject::connect(autorunAction, &QAction::toggled, [&](bool checked) {
         if (autorunAction->isChecked()) {
-            add_soft_to_autorun();
+            add_soft_to_autorun(app);
         } else {
             remove_soft_from_autorun();
         }
