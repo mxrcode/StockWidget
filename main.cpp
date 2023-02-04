@@ -175,6 +175,7 @@ void add_soft_to_autorun(QApplication &app) { // Another way to create .lnk in W
     if (result == S_OK) {
         IPersistFile *persist_file;
         shell_link->SetPath(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(app.applicationFilePath()).utf16()));
+        shell_link->SetWorkingDirectory(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(app.applicationDirPath()).utf16()));
         result = shell_link->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&persist_file));
         if (result == S_OK) {
             persist_file->Save(reinterpret_cast<const wchar_t *>(lnk_path.utf16()), TRUE);
