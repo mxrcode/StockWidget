@@ -15,4 +15,4 @@ Currently (Version 1.0.2), the widget works exclusively through the standard API
 
 *An icon should appear in the tray by clicking on which a menu for interacting with the widget will appear. There you can configure it and add the program to autorun.*
 
-**Dependencies:** [vc_redist_x64(2015-2022)](https://aka.ms/vs/17/release/vc_redist.x64.exe) [(x86)](https://aka.ms/vs/17/release/vc_redist.x86.exe) 
+**Dependencies:** [vcredist_x64(2015-2022)](https://aka.ms/vs/17/release/vc_redist.x64.exe) [(x86)](https://aka.ms/vs/17/release/vc_redist.x86.exe) 
