@@ -67,6 +67,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     Ui::MainWindow *ui;
+    void icon_taskbar_hider();
 };
 
 #endif // MAINWINDOW_H

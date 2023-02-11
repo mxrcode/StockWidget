@@ -488,6 +488,7 @@ int main(int argc, char *argv[])
     always_on_topAction->setChecked(always_on_top);
     if (always_on_top) { // Set current state for Qt::WindowStaysOnTopHint
         mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, true);
+        mainWindow.icon_taskbar_hider();
         mainWindow.show();
     }
     // Add the action to toggle "Always on top" to the tray menu
@@ -499,6 +500,7 @@ int main(int argc, char *argv[])
             replace_or_add_str_to_file(CONFIG_NAME, "$always_on_top:1", "$always_on_top:0");
             mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, false);
         }
+        mainWindow.icon_taskbar_hider();
         mainWindow.show();
     });
 
