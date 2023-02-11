@@ -255,6 +255,11 @@ int main(int argc, char *argv[])
 
     qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
 
+    // Create the main window
+    MainWindow mainWindow;
+    Ui::MainWindow *ui = mainWindow.ui;
+    mainWindow.show();
+
     // Update Block : if the filename of the current instance is new.exe, move me from new.exe to StockWidget.exe (with 1 second sleep)
     if (qApp->applicationName() == "new") {
 
@@ -313,13 +318,28 @@ int main(int argc, char *argv[])
     QAction *autorunAction = trayMenu.addAction("Autorun");
     autorunAction->setCheckable(true);
     autorunAction->setChecked(is_soft_in_autorun());
-    // Add the action to toggle autorun to the tray menu
+    // Add the action to toggle "Autorun" to the tray menu
     QObject::connect(autorunAction, &QAction::toggled, [&](bool checked) {
-        if (autorunAction->isChecked()) {
+        if (checked) {
             add_soft_to_autorun(app);
         } else {
             remove_soft_from_autorun();
         }
+    });
+
+
+    // Add a "Always on top" action with CheckBox to the menu
+    QAction *always_on_topAction = trayMenu.addAction("Always on top");
+    always_on_topAction->setCheckable(true);
+    always_on_topAction->setChecked(false);
+    // Add the action to toggle "Always on top" to the tray menu
+    QObject::connect(always_on_topAction, &QAction::toggled, [&](bool checked) {
+        if (checked) {
+            mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, true);
+        } else {
+            mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, false);
+        }
+        mainWindow.show();
     });
 
     // Separator
@@ -569,11 +589,6 @@ int main(int argc, char *argv[])
 
         return 0;
     });
-
-    // Create the main window
-    MainWindow mainWindow;
-    Ui::MainWindow *ui = mainWindow.ui;
-    mainWindow.show();
 
     const int mainWindow_width = 420;
 
