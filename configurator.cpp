@@ -80,6 +80,18 @@ Configurator::Configurator(QWidget *parent) :
 
                 continue;
             }
+            if (tmp.startsWith("$always_on_top:")) { // ALWAYS ON TOP
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$always_on_top:", "");
+
+                m_always_on_top = tmp;
+
+                continue;
+            }
 
             symbol_list.append(tmp);
         }
@@ -149,6 +161,7 @@ void Configurator::on_applyButton_clicked()
       fout << "$position:" << m_widget_position << Qt::endl;
       fout << "$auto_update:" << m_auto_update << Qt::endl;
       fout << "$use_binance_us:" << m_use_binance_us << Qt::endl;
+      fout << "$always_on_top:" << m_always_on_top << Qt::endl;
       fout << Qt::endl;
 
       QVector<QString> symbol_list = ui->symbol_textEdit->toPlainText().split("\n");

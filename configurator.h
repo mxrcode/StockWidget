@@ -78,6 +78,7 @@ private:
     QString m_use_binance_us;
     QString m_text_style;
     QString m_symbols_string;
+    QString m_always_on_top;
 
     WarningUi *warning_ui;
 };

@@ -249,6 +249,40 @@ void remove_soft_from_autorun()
 }
 */
 
+void replace_or_add_str_to_file (const QString& filename, const QString& search_str, const QString& new_str) {
+
+    QFile file(filename);
+
+    if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+        qInfo() << "Failed to open file " << filename;
+        return;
+    }
+
+    bool string_found = false;
+
+    QTextStream in(&file);
+    QString line = in.readLine();
+    QString file_contents;
+
+    while (!line.isNull()) {
+        if (line.startsWith(search_str)) {
+            string_found = true;
+            file_contents.append(new_str + "\n");
+        } else {
+            file_contents.append(line + "\n");
+        }
+
+        line = in.readLine();
+    }
+
+    if (!string_found) {
+        file_contents.append(new_str + "\n");
+    }
+
+    file.resize(0);
+    in << file_contents;
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -282,113 +316,12 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    // Create a tray icon and a menu
-    QSystemTrayIcon trayIcon;
-    QMenu trayMenu;
-
-    // Remove the empty filed for Icons
-    trayMenu.setStyleSheet("QMenu::item::icon{width: 0px;} QMenu::item::icon:disabled {width: 0px;} QMenu::item::icon:off {width: 0px;} QMenu::item::icon:on {width: 0px;} QMenu::item::icon:selected {width: 0px;} QMenu::item::icon:checked {width: 0px;} QMenu::indicator { width: 0px;}");
-
-    // Add a "Config" action to the menu
-    Configurator configurator;
-    QAction *configuratorAction = trayMenu.addAction("Edit Config");
-    QObject::connect(configuratorAction, &QAction::triggered, &app, [&]() {
-
-        configurator.show();
-
-    });
-
-    // Add a "Edit Config" action to the menu
-//    QAction *editAction = trayMenu.addAction("Edit Config");
-//    QObject::connect(editAction, &QAction::triggered, &app, [&]() {
-//        QProcess::startDetached("notepad.exe", {CONFIG_NAME});
-//    });
-
-    // Add a "Restart App" action to the menu
-    QAction *restartAction = trayMenu.addAction("Restart App");
-    QObject::connect(restartAction, &QAction::triggered, &app, [&]() {
-        // Start a new instance of the application
-        QProcess::startDetached(qApp->applicationFilePath());
-
-        // Close the current instance
-        qApp->quit();
-    });
-
-    // Add a "Autorun" action with CheckBox to the menu
-    QAction *autorunAction = trayMenu.addAction("Autorun");
-    autorunAction->setCheckable(true);
-    autorunAction->setChecked(is_soft_in_autorun());
-    // Add the action to toggle "Autorun" to the tray menu
-    QObject::connect(autorunAction, &QAction::toggled, [&](bool checked) {
-        if (checked) {
-            add_soft_to_autorun(app);
-        } else {
-            remove_soft_from_autorun();
-        }
-    });
-
-
-    // Add a "Always on top" action with CheckBox to the menu
-    QAction *always_on_topAction = trayMenu.addAction("Always on top");
-    always_on_topAction->setCheckable(true);
-    always_on_topAction->setChecked(false);
-    // Add the action to toggle "Always on top" to the tray menu
-    QObject::connect(always_on_topAction, &QAction::toggled, [&](bool checked) {
-        if (checked) {
-            mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, true);
-        } else {
-            mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, false);
-        }
-        mainWindow.show();
-    });
-
-    // Separator
-    QAction* separator_1 = new QAction();
-    separator_1->setSeparator(true);
-    trayMenu.addAction(separator_1);
-
-    // Add an "About Qt" action to the menu
-    AboutMe AboutMe;
-    QAction *aboutMeAction = trayMenu.addAction("About Me");
-    QObject::connect(aboutMeAction, &QAction::triggered, qApp, [&](){
-        AboutMe.show();
-    });
-
-    // Add an "About Qt" action to the menu
-    AboutQt AboutQt;
-    QAction *aboutQtAction = trayMenu.addAction("About Qt");
-    QObject::connect(aboutQtAction, &QAction::triggered, qApp, [&](){
-        AboutQt.show();
-//        QMessageBox aboutQtBox;
-//        aboutQtBox.setWindowIcon(QPixmap(":/img/icon-bg.svg"));
-//        aboutQtBox.setWindowTitle("About Qt — " + SOFT_NAME + " " + SOFT_VERSION);
-//        QMessageBox::aboutQt(&aboutQtBox);
-    });
-
-    // Separator
-    QAction* separator_2 = new QAction();
-    separator_2->setSeparator(true);
-    trayMenu.addAction(separator_2);
-
-    // Add a "Close" action to the menu
-    QAction *closeAction = trayMenu.addAction("Close");
-    QObject::connect(closeAction, &QAction::triggered, &app, &QApplication::quit);
-
-    // Set the tray icon and menu
-    trayIcon.setContextMenu(&trayMenu);
-
-    QString pixmapPath = ":/img/icon.svg";
-    QPixmap pixmap(pixmapPath);
-    QIcon icon(pixmap);
-    trayIcon.setIcon(icon);
-
-    trayIcon.show();
-
     QString text_style = "color:rgba(255, 255, 255, 0.65);";
     QString widget_position = "1,0";
 
     bool auto_update = 1;
     bool use_binance_us = 0;
+    bool always_on_top = 0;
 
     // DATA
     QVector<QString> symbol_list;
@@ -445,6 +378,18 @@ int main(int argc, char *argv[])
 
                 continue;
             }
+            if (tmp.startsWith("$always_on_top:")) { // ALWAYS ON TOP
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$always_on_top:", "");
+
+                always_on_top = tmp.toInt();
+
+                continue;
+            }
 
             symbol_list.append(tmp);
         }
@@ -471,6 +416,7 @@ int main(int argc, char *argv[])
             fout << "$position:" << widget_position << Qt::endl;
             fout << "$auto_update:" << "1" << Qt::endl;
             fout << "$use_binance_us:" << "0" << Qt::endl;
+            fout << "$always_on_top:" << "0" << Qt::endl;
             fout << Qt::endl;
 
             for (QString symbol : symbol_list) {
@@ -489,6 +435,114 @@ int main(int argc, char *argv[])
             return -1;
         }
     }
+
+    // Tray Block
+    // Create a tray icon and a menu
+    QSystemTrayIcon trayIcon;
+    QMenu trayMenu;
+
+    // Remove the empty filed for Icons
+    trayMenu.setStyleSheet("QMenu::item::icon{width: 0px;} QMenu::item::icon:disabled {width: 0px;} QMenu::item::icon:off {width: 0px;} QMenu::item::icon:on {width: 0px;} QMenu::item::icon:selected {width: 0px;} QMenu::item::icon:checked {width: 0px;} QMenu::indicator { width: 0px;}");
+
+    // Add a "Config" action to the menu
+    Configurator configurator;
+    QAction *configuratorAction = trayMenu.addAction("Edit Config");
+    QObject::connect(configuratorAction, &QAction::triggered, &app, [&]() {
+
+        configurator.show();
+
+    });
+
+    // Add a "Edit Config" action to the menu
+//    QAction *editAction = trayMenu.addAction("Edit Config");
+//    QObject::connect(editAction, &QAction::triggered, &app, [&]() {
+//        QProcess::startDetached("notepad.exe", {CONFIG_NAME});
+//    });
+
+    // Add a "Restart App" action to the menu
+    QAction *restartAction = trayMenu.addAction("Restart App");
+    QObject::connect(restartAction, &QAction::triggered, &app, [&]() {
+        // Start a new instance of the application
+        QProcess::startDetached(qApp->applicationFilePath());
+
+        // Close the current instance
+        qApp->quit();
+    });
+
+    // Add a "Autorun" action with CheckBox to the menu
+    QAction *autorunAction = trayMenu.addAction("Autorun");
+    autorunAction->setCheckable(true);
+    autorunAction->setChecked(is_soft_in_autorun());
+    // Add the action to toggle "Autorun" to the tray menu
+    QObject::connect(autorunAction, &QAction::toggled, [&](bool checked) {
+        if (checked) {
+            add_soft_to_autorun(app);
+        } else {
+            remove_soft_from_autorun();
+        }
+    });
+
+    // Add a "Always on top" action with CheckBox to the menu
+    QAction *always_on_topAction = trayMenu.addAction("Always on top");
+    always_on_topAction->setCheckable(true);
+    always_on_topAction->setChecked(always_on_top);
+    if (always_on_top) { // Set current state for Qt::WindowStaysOnTopHint
+        mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, true);
+        mainWindow.show();
+    }
+    // Add the action to toggle "Always on top" to the tray menu
+    QObject::connect(always_on_topAction, &QAction::toggled, [&](bool checked) {
+        if (checked) {
+            replace_or_add_str_to_file(CONFIG_NAME, "$always_on_top:0", "$always_on_top:1");
+            mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, true);
+        } else {
+            replace_or_add_str_to_file(CONFIG_NAME, "$always_on_top:1", "$always_on_top:0");
+            mainWindow.setWindowFlag(Qt::WindowStaysOnTopHint, false);
+        }
+        mainWindow.show();
+    });
+
+    // Separator
+    QAction* separator_1 = new QAction();
+    separator_1->setSeparator(true);
+    trayMenu.addAction(separator_1);
+
+    // Add an "About Qt" action to the menu
+    AboutMe AboutMe;
+    QAction *aboutMeAction = trayMenu.addAction("About Me");
+    QObject::connect(aboutMeAction, &QAction::triggered, qApp, [&](){
+        AboutMe.show();
+    });
+
+    // Add an "About Qt" action to the menu
+    AboutQt AboutQt;
+    QAction *aboutQtAction = trayMenu.addAction("About Qt");
+    QObject::connect(aboutQtAction, &QAction::triggered, qApp, [&](){
+        AboutQt.show();
+//        QMessageBox aboutQtBox;
+//        aboutQtBox.setWindowIcon(QPixmap(":/img/icon-bg.svg"));
+//        aboutQtBox.setWindowTitle("About Qt — " + SOFT_NAME + " " + SOFT_VERSION);
+//        QMessageBox::aboutQt(&aboutQtBox);
+    });
+
+    // Separator
+    QAction* separator_2 = new QAction();
+    separator_2->setSeparator(true);
+    trayMenu.addAction(separator_2);
+
+    // Add a "Close" action to the menu
+    QAction *closeAction = trayMenu.addAction("Close");
+    QObject::connect(closeAction, &QAction::triggered, &app, &QApplication::quit);
+
+    // Set the tray icon and menu
+    trayIcon.setContextMenu(&trayMenu);
+
+    QString pixmapPath = ":/img/icon.svg";
+    QPixmap pixmap(pixmapPath);
+    QIcon icon(pixmap);
+    trayIcon.setIcon(icon);
+
+    trayIcon.show();
 
     // Auto-Update Block
     UpdateInfo info = getUpdateInfo();
