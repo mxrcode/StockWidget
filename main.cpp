@@ -231,6 +231,78 @@ void replace_or_add_str_to_file (const QString& filename, const QString& search_
     in << file_contents;
 }
 
+QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list)
+{
+    QMap<QString, QMap<QString, QString>> output;
+
+    if (current_sources == "binance_com") { // Binance Global
+
+        QJsonArray symbols_json;
+        for (const auto &symbol : symbol_list) {
+            QString raw = symbol;
+            raw.replace("-", "");
+            symbols_json.append(raw);
+        }
+        QJsonDocument json_doc(symbols_json);
+        QString json_string = json_doc.toJson(QJsonDocument::Compact);
+
+        // Create a network manager.
+        QNetworkAccessManager manager;
+
+        QNetworkRequest request(QUrl("https://api.binance.com/api/v3/ticker/24hr?symbols=" + json_string));
+        auto *reply = manager.get(request);
+
+        // Wait for the request to complete
+        QEventLoop event_loop;
+        QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
+        event_loop.exec();
+
+        // Get the response data.
+        QByteArray data = reply->readAll();
+
+        // Parse the JSON data
+        QJsonDocument doc = QJsonDocument::fromJson(data);
+        QJsonArray json_array = doc.array();
+
+        for (int i = 0; i < symbol_list.size(); ++i) {
+
+            QJsonValue values = json_array[i];
+            QJsonObject obj = values.toObject();
+
+            QString current_symbol = obj["symbol"].toString();
+
+            QMap<QString, QString> inner_map;
+            inner_map.insert("symbol", current_symbol);
+            inner_map.insert("price", digit_format(obj["lastPrice"].toString()));
+            inner_map.insert("price_24h", digit_format(obj["highPrice"].toString()));
+            inner_map.insert("price_24l", digit_format(obj["lowPrice"].toString()));
+            inner_map.insert("price_percent_change", digit_format(obj["priceChangePercent"].toString()));
+
+            // Set High/Low 24h price difference
+            double d_H24 = obj["highPrice"].toString().toDouble();
+            double d_L24 = obj["lowPrice"].toString().toDouble();
+            inner_map.insert("price_difference", digit_format( QString::number((d_H24-d_L24)/(d_L24/100))));
+
+            for (QString symbol : symbol_list) {
+                QString raw = symbol;
+                raw.replace("-", "");
+
+                if (raw == current_symbol) {
+
+                    QStringList parts = symbol.split("-");
+                    inner_map.insert("coin", parts[0]);
+
+                    output.insert(symbol, inner_map);break;
+                }
+            }
+
+        }
+
+    }
+
+    return output;
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -397,7 +469,6 @@ int main(int argc, char *argv[])
 
     // Add a "Config" action to the menu
     Configurator configurator;
-    configurator.show();
     QAction *configuratorAction = trayMenu.addAction("Edit Config");
     QObject::connect(configuratorAction, &QAction::triggered, &app, [&]() {
 
@@ -629,8 +700,8 @@ int main(int argc, char *argv[])
     QMap<QString, QVector<QLabel*>> labels_map;
     labels_map.insert("symbol", {});
     labels_map.insert("price", {});
-    labels_map.insert("priceHighLow", {});
-    labels_map.insert("pricechangepercent", {});
+    labels_map.insert("price_HL", {});
+    labels_map.insert("price_percent_change", {});
 
     for (QString label_list : labels_map.keys()) {
         // Create some labels and add them to the vector
@@ -655,11 +726,11 @@ int main(int argc, char *argv[])
             for (QLabel *label : labels_map[label_list]) {
                 ui->verticalLayout_symbol->addWidget(label);
             }
-        } else if (label_list == "priceHighLow") {
+        } else if (label_list == "price_HL") {
             for (QLabel *label : labels_map[label_list]) {
                 ui->verticalLayout_priceHighLow->addWidget(label);
             }
-        } else if (label_list == "pricechangepercent") {
+        } else if (label_list == "price_percent_change") {
             for (QLabel *label : labels_map[label_list]) {
                 ui->verticalLayout_priceChangePercent->addWidget(label);
             }
@@ -697,11 +768,36 @@ int main(int argc, char *argv[])
     // Connect the timeout signal to a lambda function
     QObject::connect(timer, &QTimer::timeout, [&]() {
 
-        if (i_connect == 0) timer->setInterval(60*1000); // update every X ms
+        if (i_connect == 0) {
+            timer->setInterval(60*1000); // update every X ms
+            i_connect = 1;
+        }
 
-        // Part for Refactoring...
+        QMap<QString, QMap<QString, QString>> exchange_data = get_exchange_data(data_sources_current, symbol_list);
 
-        i_connect = 1;
+        for (int i = 0; i < symbol_list.size(); ++i) {
+
+            QFont fontRoboto_18("Roboto", 18, QFont::Normal);
+            fontRoboto_18.setStyleStrategy(QFont::PreferAntialias);
+            labels_map["symbol"].at(i)->setFont(fontRoboto_18);
+            labels_map["symbol"].at(i)->setText(exchange_data[symbol_list[i]]["coin"]);
+
+            labels_map["price"].at(i)->setText("$" + exchange_data[symbol_list[i]]["price"]);
+
+            // Set coin High & Low price
+            QFont fontRoboto_8("Roboto", 8, QFont::Normal);
+            fontRoboto_8.setStyleStrategy(QFont::PreferAntialias);
+            labels_map["price_HL"].at(i)->setFont(fontRoboto_8);
+            labels_map["price_HL"].at(i)->setText("$" + exchange_data[symbol_list[i]]["price_24h"] + "<br>" + "$" + exchange_data[symbol_list[i]]["price_24l"]);
+
+            labels_map["price_percent_change"].at(i)->setText("%" + exchange_data[symbol_list[i]]["price_percent_change"]);
+
+            // Set coin High/Low price difference
+            hl_difference.at(i)->setText("%" + exchange_data[symbol_list[i]]["price_difference"]);
+            hl_difference.at(i)->repaint();
+
+        }
+
     });
 
     return app.exec();
