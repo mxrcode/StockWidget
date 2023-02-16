@@ -231,7 +231,7 @@ void replace_or_add_str_to_file (const QString& filename, const QString& search_
     in << file_contents;
 }
 
-QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list)
+QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list, bool& network_status)
 {
     QMap<QString, QMap<QString, QString>> output;
 
@@ -263,6 +263,27 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         // Parse the JSON data
         QJsonDocument doc = QJsonDocument::fromJson(data);
         QJsonArray json_array = doc.array();
+
+        // Checking connection errors
+        network_status = (json_array.empty()) ? 1 : 0;
+        if (network_status == 1) {
+
+            for (int i = 0; i < symbol_list.size(); ++i) {
+
+                QMap<QString, QString> inner_map;
+                inner_map.insert("coin", "net");
+                inner_map.insert("symbol", "net");
+                inner_map.insert("price", "net");
+                inner_map.insert("price_24h", "net");
+                inner_map.insert("price_24l", "net");
+                inner_map.insert("price_percent_change", "net");
+                inner_map.insert("price_difference", "net");
+
+                output.insert(symbol_list[i], inner_map);
+            }
+
+            return output;
+        }
 
         for (int i = 0; i < symbol_list.size(); ++i) {
 
@@ -773,7 +794,14 @@ int main(int argc, char *argv[])
             i_connect = 1;
         }
 
-        QMap<QString, QMap<QString, QString>> exchange_data = get_exchange_data(data_sources_current, symbol_list);
+        bool network_status = 0; // 0 Normal, 1 Error
+        QMap<QString, QMap<QString, QString>> exchange_data = get_exchange_data(data_sources_current, symbol_list, network_status);
+
+        if (network_status == 1) { // Try to reconnect after 15 seconds
+            timer->setInterval(15*1000); // update every X ms
+            network_status = 0;
+            i_connect = 0;
+        }
 
         // Creating Fonts to Use Inside a Loop
         QFont font_Roboto_18("Roboto", 18, QFont::Normal);
