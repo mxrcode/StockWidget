@@ -193,6 +193,17 @@ void Configurator::on_applyButton_clicked()
       // toUpper
       std::for_each(symbol_list.begin(), symbol_list.end(), [](QString &s){ s = s.toUpper(); });
 
+      // Replacing "_" with "-" in symbol_list
+      // std::for_each(symbol_list.begin(), symbol_list.end(), [](QString &s){ s.replace("_", "-"); });
+      for (QString& symbol : symbol_list) {
+          if (symbol.contains('_')) {
+              symbol.replace('_', '-');
+          }
+          else if (symbol.contains(' ')) {
+              symbol.replace(' ', '-');
+          }
+      }
+
       for (QString symbol : symbol_list) {
         fout << symbol << Qt::endl;
       }
