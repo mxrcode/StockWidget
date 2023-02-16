@@ -99,6 +99,7 @@ Configurator::Configurator(QWidget *parent) :
 
                 continue;
             }
+            if (tmp.startsWith("$")) continue; // Skip all other parameters
 
             symbol_list.append(tmp);
         }
@@ -170,7 +171,6 @@ void Configurator::on_applyButton_clicked()
 
       // Write default config to the file.
       fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair." << Qt::endl;
-      fout << "// We use the Binance Api to get the exchange rate and other data on trading pairs." << Qt::endl;
       fout << Qt::endl;
       fout << "$text_style:" << m_text_style << Qt::endl;
       fout << "$position:" << m_widget_position << Qt::endl;
