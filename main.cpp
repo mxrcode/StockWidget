@@ -320,8 +320,9 @@ int main(int argc, char *argv[])
     QString widget_position = "1,0";
 
     bool auto_update = 1;
-    bool use_binance_us = 0;
     bool always_on_top = 0;
+
+    QString data_sources_current = "binance_com";
 
     // DATA
     QVector<QString> symbol_list;
@@ -366,18 +367,6 @@ int main(int argc, char *argv[])
 
                 continue;
             }
-            if (tmp.startsWith("$use_binance_us:")) {
-
-                // Delete comments after "//"
-                int index = tmp.indexOf("//");
-                if (index != -1) tmp = tmp.left(index);
-
-                tmp.replace("$use_binance_us:", "");
-
-                use_binance_us = tmp.toInt();
-
-                continue;
-            }
             if (tmp.startsWith("$always_on_top:")) { // ALWAYS ON TOP
 
                 // Delete comments after "//"
@@ -390,17 +379,29 @@ int main(int argc, char *argv[])
 
                 continue;
             }
+            if (tmp.startsWith("$data_sources:")) { // Data Sources
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$data_sources:", "");
+
+                data_sources_current = tmp;
+
+                continue;
+            }
 
             symbol_list.append(tmp);
         }
         file.close();
     } else {
         symbol_list = {
-            "BTCUSDT",
-            "ETHUSDT",
-            "LTCUSDT",
-            "BNBUSDT",
-            "CAKEUSDT",
+            "BTC-USDT",
+            "ETH-USDT",
+            "LTC-USDT",
+            "BNB-USDT",
+            "CAKE-USDT",
         };
 
         // Open the file for writing.
@@ -415,8 +416,8 @@ int main(int argc, char *argv[])
             fout << "$text_style:color:rgba(255, 255, 255, 0.65);" << Qt::endl;
             fout << "$position:" << widget_position << Qt::endl;
             fout << "$auto_update:" << "1" << Qt::endl;
-            fout << "$use_binance_us:" << "0" << Qt::endl;
             fout << "$always_on_top:" << "0" << Qt::endl;
+            fout << "$data_sources:" << data_sources_current << Qt::endl;
             fout << Qt::endl;
 
             for (QString symbol : symbol_list) {
@@ -446,6 +447,7 @@ int main(int argc, char *argv[])
 
     // Add a "Config" action to the menu
     Configurator configurator;
+    configurator.show();
     QAction *configuratorAction = trayMenu.addAction("Edit Config");
     QObject::connect(configuratorAction, &QAction::triggered, &app, [&]() {
 
@@ -757,8 +759,7 @@ int main(int argc, char *argv[])
         // Create a network manager.
         QNetworkAccessManager manager;
 
-        QString binance_domain = (use_binance_us) ? "api.binance.us" : "api.binance.com";
-        QNetworkRequest request(QUrl("https://" + binance_domain + "/api/v3/ticker/24hr?symbols=" + json_string));
+        QNetworkRequest request(QUrl("https://api.binance.com/api/v3/ticker/24hr?symbols=" + json_string));
         auto *reply = manager.get(request);
 
         // Wait for the request to complete
