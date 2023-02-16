@@ -87,7 +87,7 @@ Configurator::Configurator(QWidget *parent) :
 
                 continue;
             }
-            if (tmp.startsWith("$data_sources:")) { // Data Sources
+            if (tmp.startsWith("$data_sources:")) { // DATA SOURCES
 
                 // Delete comments after "//"
                 int index = tmp.indexOf("//");

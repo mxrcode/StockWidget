@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
 
                 continue;
             }
-            if (tmp.startsWith("$data_sources:")) { // Data Sources
+            if (tmp.startsWith("$data_sources:")) { // DATA SOURCES
 
                 // Delete comments after "//"
                 int index = tmp.indexOf("//");
@@ -699,105 +699,7 @@ int main(int argc, char *argv[])
 
         if (i_connect == 0) timer->setInterval(60*1000); // update every X ms
 
-        QJsonArray symbols_json;
-        for (const auto &symbol : symbol_list) {
-            symbols_json.append(symbol);
-        }
-        QJsonDocument jsonDoc(symbols_json);
-        QString json_string = jsonDoc.toJson(QJsonDocument::Compact);
-
-        // Create a network manager.
-        QNetworkAccessManager manager;
-
-        QNetworkRequest request(QUrl("https://api.binance.com/api/v3/ticker/24hr?symbols=" + json_string));
-        auto *reply = manager.get(request);
-
-        // Wait for the request to complete
-        QEventLoop eventLoop;
-        QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
-        eventLoop.exec();
-
-        // Get the response data.
-        QByteArray data = reply->readAll();
-
-        // Parse the JSON data
-        QJsonDocument doc = QJsonDocument::fromJson(data);
-        QJsonArray json_array = doc.array();
-
-        bool net_status = (json_array.empty()) ? 1 : 0;
-
-        for (int i = 0; i < symbol_list.size(); ++i) {
-
-            if (net_status == 1) {
-
-                labels_map["symbol"].at(i)->setText("net");
-                labels_map["price"].at(i)->setText("net");
-                labels_map["priceHighLow"].at(i)->setText("net");
-                labels_map["pricechangepercent"].at(i)->setText("net");
-                hl_difference.at(i)->setText("net");
-                hl_difference.at(i)->repaint();
-
-                net_status = 1;
-            }
-
-            if (net_status == 0) {
-
-                QJsonValue values = json_array[i];
-                QJsonObject obj = values.toObject();
-
-                QString symbol = obj["symbol"].toString();
-                QString priceValue = obj["lastPrice"].toString();
-                QString priceHigh24h = obj["highPrice"].toString();
-                QString priceLow24h = obj["lowPrice"].toString();
-                QString priceChangePercent = obj["priceChangePercent"].toString();
-
-                // Set symbol
-                QFont fontRoboto_18("Roboto", 18, QFont::Normal);
-                fontRoboto_18.setStyleStrategy(QFont::PreferAntialias);
-                labels_map["symbol"].at(i)->setFont(fontRoboto_18);
-                labels_map["symbol"].at(i)->setText(symbol.replace("USDT", ""));
-
-                // Set coin price
-                int priceValue_decimal;
-
-                if ( priceValue.toDouble() <= 1.00 ) {
-                    priceValue_decimal = 6;
-                } else if ( priceValue.toDouble() <= 10.00 ) {
-                    priceValue_decimal = 4;
-                } else {
-                    priceValue_decimal = 2;
-                }
-
-                labels_map["price"].at(i)->setText("$" + digit_format(priceValue, priceValue_decimal));
-
-                // Set coin High & Low price
-                QFont fontRoboto_8("Roboto", 8, QFont::Normal);
-                fontRoboto_8.setStyleStrategy(QFont::PreferAntialias);
-                labels_map["priceHighLow"].at(i)->setFont(fontRoboto_8);
-
-                int priceHigh24h_decimal;
-
-                if ( priceHigh24h.toDouble() <= 1.00 ) {
-                    priceHigh24h_decimal = 6;
-                } else if ( priceHigh24h.toDouble() <= 10.00 ) {
-                    priceHigh24h_decimal = 4;
-                } else {
-                    priceHigh24h_decimal = 2;
-                }
-
-                labels_map["priceHighLow"].at(i)->setText("$" + digit_format(priceHigh24h, priceHigh24h_decimal) + "<br>" + "$" + digit_format(priceLow24h, priceHigh24h_decimal));
-
-                // Set coin price change percent
-                labels_map["pricechangepercent"].at(i)->setText("%" + digit_format(priceChangePercent));
-
-                // Set coin High/Low price difference
-                double dH24h = priceHigh24h.toDouble();
-                double dL24h = priceLow24h.toDouble();
-                hl_difference.at(i)->setText("%" + digit_format( QString::number((dH24h-dL24h)/(dL24h/100))));
-                hl_difference.at(i)->repaint();
-
-            }
-        } net_status = 0;
+        // Part for Refactoring...
 
         i_connect = 1;
     });
