@@ -775,24 +775,25 @@ int main(int argc, char *argv[])
 
         QMap<QString, QMap<QString, QString>> exchange_data = get_exchange_data(data_sources_current, symbol_list);
 
+        // Creating Fonts to Use Inside a Loop
+        QFont font_Roboto_18("Roboto", 18, QFont::Normal);
+        font_Roboto_18.setStyleStrategy(QFont::PreferAntialias);
+
+        QFont font_Roboto_8("Roboto", 8, QFont::Normal);
+        font_Roboto_8.setStyleStrategy(QFont::PreferAntialias);
+
         for (int i = 0; i < symbol_list.size(); ++i) {
 
-            QFont fontRoboto_18("Roboto", 18, QFont::Normal);
-            fontRoboto_18.setStyleStrategy(QFont::PreferAntialias);
-            labels_map["symbol"].at(i)->setFont(fontRoboto_18);
+            labels_map["symbol"].at(i)->setFont(font_Roboto_18);
             labels_map["symbol"].at(i)->setText(exchange_data[symbol_list[i]]["coin"]);
 
             labels_map["price"].at(i)->setText("$" + exchange_data[symbol_list[i]]["price"]);
 
-            // Set coin High & Low price
-            QFont fontRoboto_8("Roboto", 8, QFont::Normal);
-            fontRoboto_8.setStyleStrategy(QFont::PreferAntialias);
-            labels_map["price_HL"].at(i)->setFont(fontRoboto_8);
+            labels_map["price_HL"].at(i)->setFont(font_Roboto_8);
             labels_map["price_HL"].at(i)->setText("$" + exchange_data[symbol_list[i]]["price_24h"] + "<br>" + "$" + exchange_data[symbol_list[i]]["price_24l"]);
 
             labels_map["price_percent_change"].at(i)->setText("%" + exchange_data[symbol_list[i]]["price_percent_change"]);
 
-            // Set coin High/Low price difference
             hl_difference.at(i)->setText("%" + exchange_data[symbol_list[i]]["price_difference"]);
             hl_difference.at(i)->repaint();
 
