@@ -197,58 +197,6 @@ void remove_soft_from_autorun()
     }
 }
 
-/* Part of the code causing problems in work : Widget not starts automatically
-bool is_soft_in_autorun()
-{
-    HKEY hKey;
-    DWORD dwType = REG_SZ;
-    TCHAR szPath[MAX_PATH];
-    DWORD dwSize = sizeof(szPath);
-
-    // Open the autorun registry key
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_QUERY_VALUE, &hKey) == ERROR_SUCCESS)
-    {
-        // Check if the program is in the autorun list
-        if (RegQueryValueEx(hKey, TEXT(dSOFT_NAME), 0, &dwType, (LPBYTE)&szPath, &dwSize) == ERROR_SUCCESS)
-        {
-            RegCloseKey(hKey);
-            return true;
-        }
-        RegCloseKey(hKey);
-    }
-    return false;
-}
-
-void add_soft_to_autorun()
-{
-    HKEY hKey;
-    DWORD dwSize = (wcslen(QString(qApp->applicationFilePath()).toStdWString().c_str()) + 1) * sizeof(wchar_t);
-
-    // Open the autorun registry key
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS)
-    {
-        QString qs_path = QDir::toNativeSeparators(qApp->applicationFilePath());
-
-        // Add the program to the autorun list
-        RegSetValueEx(hKey, TEXT(dSOFT_NAME), 0, REG_SZ, (LPBYTE)QString(qs_path).toStdWString().c_str(), dwSize);
-        RegCloseKey(hKey);
-    }
-}
-
-void remove_soft_from_autorun()
-{
-    HKEY hKey;
-
-    // Open the autorun registry key
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS)
-    {
-        // Remove the program from the autorun list
-        RegDeleteValue(hKey, TEXT(dSOFT_NAME));
-        RegCloseKey(hKey);
-    }
-}
-*/
-
 void replace_or_add_str_to_file (const QString& filename, const QString& search_str, const QString& new_str) {
 
     QFile file(filename);
@@ -391,6 +339,7 @@ int main(int argc, char *argv[])
 
                 continue;
             }
+            if (tmp.startsWith("$")) continue; // Skip all other parameters
 
             symbol_list.append(tmp);
         }
@@ -411,7 +360,6 @@ int main(int argc, char *argv[])
 
             // Write default config to the file.
             fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair." << Qt::endl;
-            fout << "// We use the Binance Api to get the exchange rate and other data on trading pairs." << Qt::endl;
             fout << Qt::endl;
             fout << "$text_style:color:rgba(255, 255, 255, 0.65);" << Qt::endl;
             fout << "$position:" << widget_position << Qt::endl;
