@@ -247,6 +247,8 @@ int main(int argc, char *argv[])
 
         QThread::msleep(3000);
 
+        // Somewhere here, need to add code that removes the old version CONFIG_NAME.
+
         QString current_file = qApp->applicationFilePath();
         QFile file(current_file);
         QString new_file = "StockWidget.exe";
