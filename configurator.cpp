@@ -23,6 +23,13 @@ Configurator::Configurator(QWidget *parent) :
     setMouseTracking(true);
     setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
+    // Initialize the m_data_sources
+    m_data_sources = {
+        {"binance_com", "Binance Global"},
+        {"binance_us", "Binance US"},
+        {"poloniex_com", "Poloniex"}
+    };
+
     // Configurator : Get Data
     QVector<QString> symbol_list;
 
@@ -68,18 +75,6 @@ Configurator::Configurator(QWidget *parent) :
 
                 continue;
             }
-            if (tmp.startsWith("$use_binance_us:")) { // USE BINANCE.US API
-
-                // Delete comments after "//"
-                int index = tmp.indexOf("//");
-                if (index != -1) tmp = tmp.left(index);
-
-                tmp.replace("$use_binance_us:", "");
-
-                m_use_binance_us = tmp;
-
-                continue;
-            }
             if (tmp.startsWith("$always_on_top:")) { // ALWAYS ON TOP
 
                 // Delete comments after "//"
@@ -89,6 +84,18 @@ Configurator::Configurator(QWidget *parent) :
                 tmp.replace("$always_on_top:", "");
 
                 m_always_on_top = tmp;
+
+                continue;
+            }
+            if (tmp.startsWith("$data_sources:")) { // Data Sources
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$data_sources:", "");
+
+                m_data_sources_current = tmp;
 
                 continue;
             }
@@ -127,12 +134,20 @@ Configurator::Configurator(QWidget *parent) :
         // autoUpdate
         ui->auto_update_checkBox->setChecked(m_auto_update.toInt());
 
-        // Binance.US API
-        ui->use_binance_us_checkBox->setChecked(m_use_binance_us.toInt());
-
         warning_ui = new WarningUi;
         connect(this, &Configurator::setWarningUiText, warning_ui, &WarningUi::setTextBrowser);
     }
+
+    // Add items to the QComboBox (dataSources_comboBox)
+    QMap<QString, QString>::iterator it;
+    for (it = m_data_sources.begin(); it != m_data_sources.end(); ++it)
+    {
+        ui->dataSources_comboBox->addItem(it.value(), it.key());
+    }
+
+    // Set the default selected item (dataSources_comboBox)
+    ui->dataSources_comboBox->setCurrentIndex(0);
+    ui->dataSources_image_label->setAttribute(Qt::WA_TransparentForMouseEvents);
 }
 
 Configurator::~Configurator()
@@ -160,8 +175,8 @@ void Configurator::on_applyButton_clicked()
       fout << "$text_style:" << m_text_style << Qt::endl;
       fout << "$position:" << m_widget_position << Qt::endl;
       fout << "$auto_update:" << m_auto_update << Qt::endl;
-      fout << "$use_binance_us:" << m_use_binance_us << Qt::endl;
       fout << "$always_on_top:" << m_always_on_top << Qt::endl;
+      fout << "$data_sources:" << m_data_sources_current << Qt::endl;
       fout << Qt::endl;
 
       QVector<QString> symbol_list = ui->symbol_textEdit->toPlainText().split("\n");
@@ -227,5 +242,3 @@ void Configurator::on_widgetPosition_radioButton__4_clicked() {m_widget_position
 
 // autoUpdate
 void Configurator::on_auto_update_checkBox_stateChanged(int arg1) {m_auto_update = (ui->auto_update_checkBox->isChecked()) ? "1" : "0";}
-// Binance.US API
-void Configurator::on_use_binance_us_checkBox_stateChanged(int arg1) {m_use_binance_us = (ui->use_binance_us_checkBox->isChecked()) ? "1" : "0";}

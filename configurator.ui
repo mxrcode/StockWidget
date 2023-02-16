@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>394</width>
-    <height>492</height>
+    <width>575</width>
+    <height>410</height>
    </rect>
   </property>
   <property name="font">
@@ -37,14 +37,16 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>393</width>
-     <height>491</height>
+     <width>574</width>
+     <height>409</height>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">background-color:#4C5844;
-color:white;
-border: 1px solid #7A836E;</string>
+    <string notr="true">QWidget {
+background-color: #4C5844;
+color: #D9D9D9;
+border: 1px solid #7A836E;
+}</string>
    </property>
    <widget class="Line" name="line">
     <property name="geometry">
@@ -65,11 +67,11 @@ border: 1px solid #7A836E;</string>
     <rect>
      <x>1</x>
      <y>1</y>
-     <width>391</width>
+     <width>571</width>
      <height>44</height>
     </rect>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="10,2,40,46,20,3">
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="10,2,40,46,2">
     <item>
      <widget class="QLabel" name="label">
       <property name="maximumSize">
@@ -144,49 +146,6 @@ border: 1px solid #7A836E;</string>
      </spacer>
     </item>
     <item>
-     <widget class="QPushButton" name="closeButton">
-      <property name="maximumSize">
-       <size>
-        <width>28</width>
-        <height>28</height>
-       </size>
-      </property>
-      <property name="font">
-       <font>
-        <family>Segoe UI</family>
-        <pointsize>12</pointsize>
-        <bold>true</bold>
-        <stylestrategy>PreferDefault</stylestrategy>
-        <kerning>true</kerning>
-       </font>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QPushButton {
-	background-color: #4C5844;
-	color: #899581;
-	border: 1px solid #7A836E;
-}
-
-QPushButton:hover {
-    background-color: #3E4637;
-}
-</string>
-      </property>
-      <property name="text">
-       <string>X</string>
-      </property>
-      <property name="autoDefault">
-       <bool>false</bool>
-      </property>
-      <property name="default">
-       <bool>false</bool>
-      </property>
-      <property name="flat">
-       <bool>false</bool>
-      </property>
-     </widget>
-    </item>
-    <item>
      <spacer name="horizontalSpacer_2">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -206,12 +165,36 @@ QPushButton:hover {
     <rect>
      <x>1</x>
      <y>45</y>
-     <width>391</width>
-     <height>445</height>
+     <width>573</width>
+     <height>363</height>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">border: 1px solid #7A836E;margin:10px;color:#D9D9D9;</string>
+    <string notr="true">QGroupBox {
+	margin:10px;
+	border: 1px solid #7A836E;
+	color:#D9D9D9;
+}
+QLabel {
+	color:#D9D9D9;
+}
+QWidget {
+	background-color:#4C5844;
+	color: #D9D9D9;
+	border: 1px solid #7A836E;
+}
+QRadioButton::indicator {
+    background-color: #3E4637;
+}
+QCheckBox::indicator {
+    background-color: #3E4637;
+}
+QRadioButton::indicator:checked {
+    background-color: #B8B857;
+}
+QCheckBox::indicator:checked {
+    background-color: #B8B857;
+}</string>
    </property>
    <property name="title">
     <string/>
@@ -220,7 +203,7 @@ QPushButton:hover {
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>50</y>
+      <y>122</y>
       <width>181</width>
       <height>118</height>
      </rect>
@@ -277,7 +260,7 @@ QRadioButton:checked {
      <property name="geometry">
       <rect>
        <x>110</x>
-       <y>4</y>
+       <y>5</y>
        <width>71</width>
        <height>53</height>
       </rect>
@@ -309,7 +292,7 @@ QRadioButton:checked {
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>4</y>
+       <y>5</y>
        <width>85</width>
        <height>53</height>
       </rect>
@@ -374,7 +357,7 @@ QRadioButton:checked {
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>10</y>
+      <y>81</y>
       <width>181</width>
       <height>41</height>
      </rect>
@@ -398,7 +381,7 @@ QRadioButton:checked {
       <x>10</x>
       <y>50</y>
       <width>181</width>
-      <height>304</height>
+      <height>302</height>
      </rect>
     </property>
     <property name="font">
@@ -408,8 +391,7 @@ QRadioButton:checked {
      </font>
     </property>
     <property name="styleSheet">
-     <string notr="true">margin: 0px 0px 10px 10px;
-background-color:#3E4637;</string>
+     <string notr="true">margin: 0px 0px 10px 10px;background-color: #3E4637;</string>
     </property>
    </widget>
    <widget class="QLabel" name="symbol_textEdit_label">
@@ -440,10 +422,10 @@ background-color:#3E4637;</string>
    <widget class="QPushButton" name="cancelButton">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>393</y>
+      <x>370</x>
+      <y>308</y>
       <width>181</width>
-      <height>41</height>
+      <height>44</height>
      </rect>
     </property>
     <property name="maximumSize">
@@ -490,10 +472,10 @@ QPushButton:hover {
    <widget class="QPushButton" name="applyButton">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>353</y>
+      <x>370</x>
+      <y>267</y>
       <width>181</width>
-      <height>41</height>
+      <height>44</height>
      </rect>
     </property>
     <property name="maximumSize">
@@ -540,8 +522,8 @@ QPushButton:hover {
    <widget class="QLabel" name="chooseTextColor_label">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>157</y>
+      <x>371</x>
+      <y>10</y>
       <width>181</width>
       <height>41</height>
      </rect>
@@ -562,8 +544,8 @@ QPushButton:hover {
    <widget class="QPushButton" name="selectColor_button">
     <property name="geometry">
      <rect>
-      <x>329</x>
-      <y>197</y>
+      <x>511</x>
+      <y>50</y>
       <width>41</width>
       <height>41</height>
      </rect>
@@ -598,14 +580,15 @@ QPushButton:hover {
    <widget class="QLabel" name="currentColor_label">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>197</y>
+      <x>371</x>
+      <y>50</y>
       <width>141</width>
       <height>41</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">margin: 0px 0px 10px 10px;</string>
+     <string notr="true">margin: 0px 0px 10px 10px;
+border: 1px solid #7A836E;</string>
     </property>
     <property name="text">
      <string/>
@@ -615,7 +598,7 @@ QPushButton:hover {
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>230</y>
+      <y>228</y>
       <width>181</width>
       <height>41</height>
      </rect>
@@ -637,7 +620,7 @@ QPushButton:hover {
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>269</y>
+      <y>267</y>
       <width>181</width>
       <height>85</height>
      </rect>
@@ -727,16 +710,16 @@ QRadioButton:checked {
    <widget class="QGroupBox" name="dev_groupBox">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>353</y>
+      <x>371</x>
+      <y>122</y>
       <width>181</width>
-      <height>81</height>
+      <height>108</height>
      </rect>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color:#4C5844;
 border: 1px solid #7A836E;
-margin: 0px 0px 10px 10px;</string>
+margin: 0px 0px 0px 10px;</string>
     </property>
     <property name="title">
      <string/>
@@ -750,7 +733,7 @@ margin: 0px 0px 10px 10px;</string>
        <x>10</x>
        <y>6</y>
        <width>171</width>
-       <height>31</height>
+       <height>51</height>
       </rect>
      </property>
      <property name="font">
@@ -761,7 +744,7 @@ margin: 0px 0px 10px 10px;</string>
      <property name="styleSheet">
       <string notr="true">QCheckBox {
 	border: 0px solid black;
-	margin: 0px 0px 0px 12px;
+	margin: 0px 0px 0px 17px;
 	background-color: rgba(255, 255, 255, 0);
 }
 QCheckBox:hover {
@@ -784,44 +767,202 @@ QCheckBox:checked {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QCheckBox" name="use_binance_us_checkBox">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>35</y>
-       <width>171</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QCheckBox {
-	border: 0px solid black;
-	margin: 0px 0px 0px 12px;
-	background-color: rgba(255, 255, 255, 0);
-}
-QCheckBox:hover {
-	color: #B8B857;
-}
-QCheckBox:checked {
-	color: #B8B857;
-}</string>
-     </property>
-     <property name="text">
-      <string>Binance.US API</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-     <property name="tristate">
-      <bool>false</bool>
-     </property>
-    </widget>
    </widget>
+   <widget class="QLabel" name="dataSources_label">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>10</y>
+      <width>181</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border: 0px solid black;margin: 6px 0px 6px 7px;</string>
+    </property>
+    <property name="text">
+     <string>Data source</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="dataSources_comboBox">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>50</y>
+      <width>171</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QComboBox {
+    background-color: #3E4637;
+    color: #D9D9D9;
+    border: 1px solid #7A836E;
+    padding: 5px;
+	margin: 0px;
+}
+QComboBox::down-arrow {
+	height: 20px;
+	width: 20px;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: right;
+    width: 29px;
+    border-left-width: 1px;
+    border-left-color: #7A836E;
+    border-left-style: solid;
+	background-color: #3E4637;
+	color: #D9D9D9;
+	margin: 0px;
+}</string>
+    </property>
+    <property name="currentText">
+     <string/>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="otherOptions_label">
+    <property name="geometry">
+     <rect>
+      <x>371</x>
+      <y>81</y>
+      <width>181</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border: 0px solid black;margin: 6px 0px 6px 7px;</string>
+    </property>
+    <property name="text">
+     <string>Other options</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="save_label">
+    <property name="geometry">
+     <rect>
+      <x>371</x>
+      <y>228</y>
+      <width>181</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Segoe UI</family>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border: 0px solid black;margin: 6px 0px 6px 7px;</string>
+    </property>
+    <property name="text">
+     <string>Save changes</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="dataSources_image_label">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>343</x>
+      <y>50</y>
+      <width>25</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: transparent;
+border: 0px solid;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="application.qrc">:/img/down_arrow.svg</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>false</bool>
+    </property>
+    <property name="margin">
+     <number>6</number>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="closeButton">
+   <property name="geometry">
+    <rect>
+     <x>536</x>
+     <y>8</y>
+     <width>28</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>28</width>
+     <height>28</height>
+    </size>
+   </property>
+   <property name="font">
+    <font>
+     <family>Segoe UI</family>
+     <pointsize>12</pointsize>
+     <bold>true</bold>
+     <stylestrategy>PreferDefault</stylestrategy>
+     <kerning>true</kerning>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+	background-color: #4C5844;
+	color: #899581;
+	border: 1px solid #7A836E;
+}
+
+QPushButton:hover {
+    background-color: #3E4637;
+}
+</string>
+   </property>
+   <property name="text">
+    <string>X</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+   <property name="default">
+    <bool>false</bool>
+   </property>
+   <property name="flat">
+    <bool>false</bool>
+   </property>
   </widget>
  </widget>
  <resources>
