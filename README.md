@@ -1,9 +1,16 @@
 # StockWidget
 Widget for displaying the exchange rate of cryptocurrencies on the desktop in real time.
 
-![image](https://user-images.githubusercontent.com/123785508/216552189-b3a4a869-1763-4f12-bafb-c4320ef70531.png)
+![evehNw1](https://user-images.githubusercontent.com/123785508/219620683-a3b7edea-6e2e-4cc7-932d-270e51966d2d.png)
 
-Currently (Version 1.0.3), the widget works exclusively through the standard API with the Binance cryptocurrency exchange. Due to the limits set by the exchange, the program cannot receive data more than once every 60sec.
+This is how the configurator will look like in the new version of the widget (1.1.0).
+
+**List of supported cryptocurrency exchanges (API):**
+- Binance Global
+- Binance US
+- Poloniex
+
+*Due to the limits set by the exchange, the program cannot receive data more than once every 60sec. These restrictions can be removed by using WebSocket or the developer's servers (Which we don't have).*
 
 ## Installation
 
