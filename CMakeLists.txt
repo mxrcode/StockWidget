@@ -13,7 +13,17 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core Gui Network Concurrent)
 
 # Add minizip source code
-add_subdirectory(minizip)
+# add_subdirectory(minizip)
+
+include(FetchContent)
+
+FetchContent_Declare(
+  minizip
+  GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng
+  GIT_TAG 3.0.8
+)
+
+FetchContent_MakeAvailable(minizip)
 
 set(PROJECT_SOURCES
         main.cpp
