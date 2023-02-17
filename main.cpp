@@ -120,7 +120,7 @@ QString digit_format (QString number, int decimal_places = 2) {
     return number;
 }
 
-void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) // Part for outputting debug info to qInfo.log
+void message_handler(QtMsgType type, const QMessageLogContext &context, const QString &msg) // Part for outputting debug info to qInfo.log
 {
     QFile log_file("qInfo.log");
     if (log_file.open(QIODevice::WriteOnly | QIODevice::Append)) {
@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
+    qInstallMessageHandler(message_handler); // Output debug info to qInfo.log
 
     // Create the main window
     MainWindow mainWindow;
@@ -409,7 +409,8 @@ int main(int argc, char *argv[])
 
         QThread::msleep(3000);
 
-        // Somewhere here, need to add code that removes the old version CONFIG_NAME.
+        // Remove the old version CONFIG_NAME.
+        file_remover(CONFIG_NAME);
 
         QString current_file = qApp->applicationFilePath();
         QFile file(current_file);
