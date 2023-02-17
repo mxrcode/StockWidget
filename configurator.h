@@ -35,7 +35,7 @@ protected:
         {
             if (event->pos().y() < 44) {
                 //m_dragPosition = event->globalPos() - frameGeometry().topLeft(); // globalPos() is deprecated now
-                m_dragPosition = QCursor::pos() - frameGeometry().topLeft();
+                m_drag_position = QCursor::pos() - frameGeometry().topLeft();
                 event->accept();
             }
         }
@@ -45,7 +45,7 @@ protected:
         {
             if (event->pos().y() < 44) {
                 // move(event->globalPos() - m_dragPosition); // globalPos() is deprecated now
-                move(QCursor::pos() - m_dragPosition);
+                move(QCursor::pos() - m_drag_position);
                 event->accept();
             }
         }
@@ -67,9 +67,11 @@ private slots:
 
     void on_auto_update_checkBox_stateChanged(int arg1);
 
+    void on_dataSources_comboBox_currentIndexChanged(int index);
+
 private:
     Ui::Configurator *ui;
-    QPoint m_dragPosition;
+    QPoint m_drag_position;
 
     // Data
     QString m_widget_position;

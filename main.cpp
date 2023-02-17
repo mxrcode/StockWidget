@@ -231,11 +231,25 @@ void replace_or_add_str_to_file (const QString& filename, const QString& search_
     in << file_contents;
 }
 
+QMap<QString, QString> return_null_map () {
+
+    QMap<QString, QString> inner_map;
+    inner_map.insert("coin", "net");
+    inner_map.insert("symbol", "net");
+    inner_map.insert("price", "net");
+    inner_map.insert("price_24h", "net");
+    inner_map.insert("price_24l", "net");
+    inner_map.insert("price_percent_change", "net");
+    inner_map.insert("price_difference", "net");
+
+    return inner_map;
+}
+
 QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list, bool& network_status)
 {
     QMap<QString, QMap<QString, QString>> output;
 
-    if (current_sources == "binance_com") { // Binance Global
+    if (current_sources == "binance_com" || current_sources == "binance_us") { // Binance (Global/US)
 
         QJsonArray symbols_json;
         for (const auto &symbol : symbol_list) {
@@ -249,7 +263,10 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         // Create a network manager.
         QNetworkAccessManager manager;
 
-        QNetworkRequest request(QUrl("https://api.binance.com/api/v3/ticker/24hr?symbols=" + json_string));
+        QString domain = "api.binance.com";
+        if (current_sources == "binance_us") domain = "api.binance.us";
+
+        QNetworkRequest request(QUrl("https://" + domain + "/api/v3/ticker/24hr?symbols=" + json_string));
         auto *reply = manager.get(request);
 
         // Wait for the request to complete
@@ -269,17 +286,7 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         if (network_status == 1) {
 
             for (int i = 0; i < symbol_list.size(); ++i) {
-
-                QMap<QString, QString> inner_map;
-                inner_map.insert("coin", "net");
-                inner_map.insert("symbol", "net");
-                inner_map.insert("price", "net");
-                inner_map.insert("price_24h", "net");
-                inner_map.insert("price_24l", "net");
-                inner_map.insert("price_percent_change", "net");
-                inner_map.insert("price_difference", "net");
-
-                output.insert(symbol_list[i], inner_map);
+                output.insert(symbol_list[i], return_null_map());
             }
 
             return output;
@@ -320,6 +327,68 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         }
 
     }
+    else if (current_sources == "poloniex_com") {
+
+        // Create a network manager.
+        QNetworkAccessManager manager;
+
+        QNetworkRequest request(QUrl("https://poloniex.com/public?command=returnTicker"));
+        auto *reply = manager.get(request);
+
+        // Wait for the request to complete
+        QEventLoop event_loop;
+        QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
+        event_loop.exec();
+
+        // Get the response data.
+        QByteArray data = reply->readAll();
+
+        // Parse the JSON data
+        QJsonDocument doc = QJsonDocument::fromJson(data);
+        QJsonObject json_obj = doc.object();
+
+        // Checking connection errors
+        network_status = (json_obj.empty()) ? 1 : 0;
+        if (network_status == 1) {
+
+            for (int i = 0; i < symbol_list.size(); ++i) {
+                output.insert(symbol_list[i], return_null_map());
+            }
+
+            return output;
+        }
+
+        // Convert strings for JSON search
+        for (int i = 0; i < symbol_list.size(); ++i) {
+
+            QStringList pairs = symbol_list[i].split("-");
+            QString symbol = pairs.at(1) + "_" + pairs.at(0);
+            if (symbol_list[i].contains("USD") == true) {
+                symbol = pairs.at(1) + "_" + pairs.at(0);
+            }
+
+            QJsonValue jv_symbol_value = json_obj.value(symbol);
+            QJsonObject jo_symbol_value = jv_symbol_value.toObject();
+
+            QString current_symbol = symbol;
+
+            QMap<QString, QString> inner_map;
+            inner_map.insert("symbol", current_symbol);
+            inner_map.insert("price", digit_format(jo_symbol_value.value("last").toString()));
+            inner_map.insert("price_24h", digit_format(jo_symbol_value.value("high24hr").toString()));
+            inner_map.insert("price_24l", digit_format(jo_symbol_value.value("low24hr").toString()));
+            inner_map.insert("price_percent_change", digit_format(jo_symbol_value.value("percentChange").toString()));
+
+            // Set High/Low 24h price difference
+            double d_H24 = jo_symbol_value.value("high24hr").toString().toDouble();
+            double d_L24 = jo_symbol_value.value("low24hr").toString().toDouble();
+            inner_map.insert("price_difference", digit_format( QString::number((d_H24-d_L24)/(d_L24/100))));
+
+            inner_map.insert("coin", pairs[0]);
+            output.insert(symbol_list[i], inner_map);
+        }
+
+    }
 
     return output;
 }
@@ -328,7 +397,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
+    // qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
 
     // Create the main window
     MainWindow mainWindow;

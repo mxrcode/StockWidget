@@ -26,8 +26,8 @@ Configurator::Configurator(QWidget *parent) :
     // Initialize the m_data_sources
     m_data_sources = {
         {"binance_com", "Binance Global"},
-        // {"binance_us", "Binance US"},
-        // {"poloniex_com", "Poloniex"}
+        {"binance_us", "Binance US"},
+        {"poloniex_com", "Poloniex"}
     };
 
     // Configurator : Get Data
@@ -250,5 +250,12 @@ void Configurator::on_widgetPosition_radioButton__2_clicked() {m_widget_position
 void Configurator::on_widgetPosition_radioButton__3_clicked() {m_widget_position = "1,0";}
 void Configurator::on_widgetPosition_radioButton__4_clicked() {m_widget_position = "1,1";}
 
-// autoUpdate
+// Auto Update
 void Configurator::on_auto_update_checkBox_stateChanged(int arg1) {m_auto_update = (ui->auto_update_checkBox->isChecked()) ? "1" : "0";}
+
+// Data Sources
+void Configurator::on_dataSources_comboBox_currentIndexChanged(int index)
+{
+    m_data_sources_current = ui->dataSources_comboBox->currentData().toString();
+}
+
