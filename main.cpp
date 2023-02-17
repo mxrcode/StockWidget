@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    // qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
+    qInstallMessageHandler(messageHandler); // Output debug info to qInfo.log
 
     // Create the main window
     MainWindow mainWindow;

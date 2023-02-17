@@ -132,7 +132,7 @@ Configurator::Configurator(QWidget *parent) :
         t_text_style.replace("0.65", "1"); // Change Opacity for visual color accuracy
         ui->currentColor_label->setStyleSheet(ui->currentColor_label->styleSheet() + t_text_style);
 
-        // autoUpdate
+        // Auto Update
         ui->auto_update_checkBox->setChecked(m_auto_update.toInt());
 
         warning_ui = new WarningUi;
@@ -141,14 +141,18 @@ Configurator::Configurator(QWidget *parent) :
 
     // Add items to the QComboBox (dataSources_comboBox)
     QMap<QString, QString>::iterator it;
-    for (it = m_data_sources.begin(); it != m_data_sources.end(); ++it)
+    int it_qmap_i = 0;
+    for (it = m_data_sources.begin(); it != m_data_sources.end(); ++it, ++it_qmap_i)
     {
         ui->dataSources_comboBox->addItem(it.value(), it.key());
-    }
 
-    // Set the default selected item (dataSources_comboBox)
-    ui->dataSources_comboBox->setCurrentIndex(0);
+        // Set the default selected item (dataSources_comboBox)
+        if (m_data_sources_current == it.key()) ui->dataSources_comboBox->setCurrentIndex(it_qmap_i);
+    } it_qmap_i = 0;
+
     ui->dataSources_image_label->setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    constructor_unlocked = true;
 }
 
 Configurator::~Configurator()
@@ -256,6 +260,6 @@ void Configurator::on_auto_update_checkBox_stateChanged(int arg1) {m_auto_update
 // Data Sources
 void Configurator::on_dataSources_comboBox_currentIndexChanged(int index)
 {
-    m_data_sources_current = ui->dataSources_comboBox->currentData().toString();
+    if (constructor_unlocked == true) m_data_sources_current = ui->dataSources_comboBox->currentData().toString();
 }
 

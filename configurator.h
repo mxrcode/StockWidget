@@ -83,6 +83,8 @@ private:
     QMap<QString, QString> m_data_sources;
     QString m_data_sources_current;
 
+    bool constructor_unlocked = false;
+
     WarningUi *warning_ui;
 };
 
