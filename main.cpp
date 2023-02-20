@@ -562,9 +562,7 @@ int main(int argc, char *argv[])
     Configurator configurator;
     QAction *configuratorAction = trayMenu.addAction("Edit Config");
     QObject::connect(configuratorAction, &QAction::triggered, &app, [&]() {
-
         configurator.show();
-
     });
 
     // Add a "Edit Config" action to the menu
