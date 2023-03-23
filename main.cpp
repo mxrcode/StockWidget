@@ -95,29 +95,55 @@ QString sha256_by_link(QString s_url) {
 
 }
 
-QString digit_format (QString number, int decimal_places = 2) {
+QString digit_format_add (QString s, int decimal = 0) {
 
-    QStringList parts = number.split(".");
-    QString decimal_part = parts[1];
-    decimal_part.chop(decimal_part.size() - decimal_places);
-    number = parts[0] + "." + decimal_part;
+    try {
+        QStringList parts = s.split(".");
 
-    // Insert a space every 3 digits
-    int dot_index = number.indexOf(".");
-    if (dot_index == -1) return number; // number doesn't contain a dot
+        if (decimal == 0) {
+            long int_part = parts[0].toLong();
 
-    for (int i = dot_index - 3; i > 0; i -= 3) {
-        number.insert(i, ' ');
+            if (int_part >= 10) {
+                decimal = 2;
+            } else if (int_part <= 0) {
+                decimal = 6;
+            } else {
+                decimal = 4;
+            }
+        }
+
+        QString decimal_part = parts[1];
+        decimal_part.chop(decimal_part.size() - decimal);
+        s = parts[0] + "." + decimal_part;
+
+        // Insert a space every 3 digits
+        int dot_index = s.indexOf(".");
+        if (dot_index == -1) return s; // number doesn't contain a dot
+
+        for (int i = dot_index - 3; i > 0; i -= 3) {
+            s.insert(i, ' ');
+        }
+
+        // Trim trailing zeros after dot
+        while (s.endsWith("0") && s.at(dot_index + 1) != '\0') {
+            if (s.at(s.size()-3) == '.') break;
+            s.chop(1);
+        }
+        if (s.endsWith(".")) s.chop(1);
+
+    } catch (...) {
+        // ...
     }
 
-    // Trim trailing zeros after dot
-    while (number.endsWith("0") && number.at(dot_index + 1) != '\0') {
-        if (number.at(number.size()-3) == '.') break;
-        number.chop(1);
-    }
-    if (number.endsWith(".")) number.chop(1);
+    return s;
+}
 
-    return number;
+QString digit_format (QJsonValue value, int decimal = 0) {
+    return digit_format_add(value.toString(), decimal);
+}
+
+QString digit_format (double value, int decimal = 0) {
+    return digit_format_add(QString::number(value), decimal);
 }
 
 void message_handler(QtMsgType type, const QMessageLogContext &context, const QString &msg) // Part for outputting debug info to qInfo.log
@@ -301,15 +327,15 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
 
             QMap<QString, QString> inner_map;
             inner_map.insert("symbol", current_symbol);
-            inner_map.insert("price", digit_format(obj["lastPrice"].toString()));
-            inner_map.insert("price_24h", digit_format(obj["highPrice"].toString()));
-            inner_map.insert("price_24l", digit_format(obj["lowPrice"].toString()));
-            inner_map.insert("price_percent_change", digit_format(obj["priceChangePercent"].toString()));
+            inner_map.insert("price", digit_format(obj["lastPrice"]));
+            inner_map.insert("price_24h", digit_format(obj["highPrice"]));
+            inner_map.insert("price_24l", digit_format(obj["lowPrice"]));
+            inner_map.insert("price_percent_change", digit_format(obj["priceChangePercent"], 2));
 
             // Set High/Low 24h price difference
             double d_H24 = obj["highPrice"].toString().toDouble();
             double d_L24 = obj["lowPrice"].toString().toDouble();
-            inner_map.insert("price_difference", digit_format( QString::number((d_H24-d_L24)/(d_L24/100))));
+            inner_map.insert("price_difference", digit_format((d_H24-d_L24)/(d_L24/100), 2));
 
             for (QString symbol : symbol_list) {
                 QString raw = symbol;
@@ -374,15 +400,15 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
 
             QMap<QString, QString> inner_map;
             inner_map.insert("symbol", current_symbol);
-            inner_map.insert("price", digit_format(jo_symbol_value.value("last").toString()));
-            inner_map.insert("price_24h", digit_format(jo_symbol_value.value("high24hr").toString()));
-            inner_map.insert("price_24l", digit_format(jo_symbol_value.value("low24hr").toString()));
-            inner_map.insert("price_percent_change", digit_format(jo_symbol_value.value("percentChange").toString()));
+            inner_map.insert("price", digit_format(jo_symbol_value.value("last")));
+            inner_map.insert("price_24h", digit_format(jo_symbol_value.value("high24hr")));
+            inner_map.insert("price_24l", digit_format(jo_symbol_value.value("low24hr")));
+            inner_map.insert("price_percent_change", digit_format(jo_symbol_value.value("percentChange"), 2));
 
             // Set High/Low 24h price difference
             double d_H24 = jo_symbol_value.value("high24hr").toString().toDouble();
             double d_L24 = jo_symbol_value.value("low24hr").toString().toDouble();
-            inner_map.insert("price_difference", digit_format( QString::number((d_H24-d_L24)/(d_L24/100))));
+            inner_map.insert("price_difference", digit_format((d_H24-d_L24)/(d_L24/100), 2));
 
             inner_map.insert("coin", pairs[0]);
             output.insert(symbol_list[i], inner_map);
