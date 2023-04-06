@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <QVector>
+#include <QMap>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QScreen>

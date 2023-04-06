@@ -257,16 +257,16 @@ void replace_or_add_str_to_file (const QString& filename, const QString& search_
     in << file_contents;
 }
 
-QMap<QString, QString> return_null_map () {
+QMap<QString, QString> return_null_map (QString text = "net", QString coin = "net") {
 
     QMap<QString, QString> inner_map;
-    inner_map.insert("coin", "net");
-    inner_map.insert("symbol", "net");
-    inner_map.insert("price", "net");
-    inner_map.insert("price_24h", "net");
-    inner_map.insert("price_24l", "net");
-    inner_map.insert("price_percent_change", "net");
-    inner_map.insert("price_difference", "net");
+    inner_map.insert("coin", coin);
+    inner_map.insert("symbol", text);
+    inner_map.insert("price", text);
+    inner_map.insert("price_24h", text);
+    inner_map.insert("price_24l", text);
+    inner_map.insert("price_percent_change", text);
+    inner_map.insert("price_difference", text);
 
     return inner_map;
 }
@@ -442,6 +442,77 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
             inner_map.insert("price_difference", digit_format((d_H24-d_L24)/(d_L24/100), 2));
 
             inner_map.insert("coin", pairs[0]);
+            output.insert(symbol_list[i], inner_map);
+        }
+
+    }
+    else if (current_sources == "coinbase_com") { // Coinbase.com
+
+        for (int i = 0; i < symbol_list.size(); ++i) {
+
+            // Create a network manager.
+            QNetworkAccessManager manager;
+
+            QNetworkRequest request(QUrl("https://api.exchange.coinbase.com/products/" + symbol_list[i] + "/stats"));
+            auto *reply = manager.get(request);
+
+            // Wait for the request to complete
+            QEventLoop event_loop;
+            QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
+            event_loop.exec();
+
+            // Get the response data.
+            QByteArray data = reply->readAll();            // Parse the JSON data and obtain a QVariant
+            QJsonDocument json_doc = QJsonDocument::fromJson(data);
+            QVariantMap json_data = json_doc.toVariant().toMap();
+
+            // Checking connection errors
+            if (reply->error() == QNetworkReply::NoError) {
+                network_status = 0;
+            } else if (reply->error() == QNetworkReply::TimeoutError) { // Handle the timeout error
+                network_status = 1;
+                qInfo() << "Network request timed out";
+            } else { // Handle other errors
+
+                // It checks if there are any messages. They usually appear when we ask for a pair that doesn't exist.
+                if (json_data.contains("message")) {
+                    QStringList pairs = symbol_list[i].split("-");
+                    output.insert(symbol_list[i], return_null_map("ERROR", pairs.at(0)));
+                    qInfo() << json_data.value("message").toString() << " : " << symbol_list[i];
+                    continue;
+                }
+
+                network_status = 1;
+                qInfo() << "Network request error: " << reply->errorString();
+            }
+
+            if (network_status == 1) {
+                for (int i = 0; i < symbol_list.size(); ++i) {
+                    output.insert(symbol_list[i], return_null_map());
+                }
+                return output;
+            }
+
+            double open_price = json_data.value("open").toDouble();
+            double last_price = json_data.value("last").toDouble();
+            double high_price = json_data.value("high").toDouble();
+            double low_price = json_data.value("low").toDouble();
+
+            QMap<QString, QString> inner_map;
+            inner_map.insert("symbol", symbol_list[i]);
+            inner_map.insert("price", digit_format(last_price));
+            inner_map.insert("price_24h", digit_format(high_price));
+            inner_map.insert("price_24l", digit_format(low_price));
+
+            // Calculate price percent change manually
+            double price_percent_change = ((last_price - open_price) / open_price) * 100;
+            inner_map.insert("price_percent_change", digit_format(price_percent_change, 2));
+
+            // Set High/Low 24h price difference
+            inner_map.insert("price_difference", digit_format((high_price-low_price)/(low_price/100), 2));
+
+            QStringList pairs = symbol_list[i].split("-");
+            inner_map.insert("coin", pairs.at(0));
             output.insert(symbol_list[i], inner_map);
         }
 
@@ -936,6 +1007,10 @@ int main(int argc, char *argv[])
         font_Roboto_8.setStyleStrategy(QFont::PreferAntialias);
 
         for (int i = 0; i < symbol_list.size(); ++i) {
+
+            if (!exchange_data.contains(symbol_list[i])) {
+                continue;
+            }
 
             labels_map["symbol"].at(i)->setFont(font_Roboto_18);
             labels_map["symbol"].at(i)->setText(exchange_data[symbol_list[i]]["coin"]);
