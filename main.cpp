@@ -271,6 +271,36 @@ QMap<QString, QString> return_null_map () {
     return inner_map;
 }
 
+double poloniex_price_percent_change(QString symbol, double current_price) {
+
+    qint64 current_utime = QDateTime::currentSecsSinceEpoch();
+
+    // Create a network manager.
+    QNetworkAccessManager manager;
+
+    QNetworkRequest request(QUrl("https://poloniex.com/public?command=returnChartData&currencyPair=" + symbol + "&start=" + QString::number(current_utime-86400) + "&end=" + QString::number(current_utime) + "&period=300"));
+    auto *reply = manager.get(request);
+
+    // Wait for the request to complete
+    QEventLoop event_loop;
+    QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
+    event_loop.exec();
+
+    // Get the response data.
+    QByteArray data = reply->readAll();
+
+    // Parse the JSON data and obtain a QVariant
+    QJsonDocument json_doc = QJsonDocument::fromJson(data);
+    QVariant json_variant = json_doc.toVariant();
+
+    // Convert the QVariant to a vector
+    QVector<QVariant> json_vector = json_variant.value<QVector<QVariant>>();
+
+    double open_price = json_vector.at(0).toMap().value("open").toDouble();
+
+    return ((current_price - open_price)/open_price)*100;
+}
+
 QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list, bool& network_status)
 {
     QMap<QString, QMap<QString, QString>> output;
@@ -392,18 +422,19 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
             if (symbol_list[i].contains("USD") == true) {
                 symbol = pairs.at(1) + "_" + pairs.at(0);
             }
+            QString current_symbol = symbol;
 
             QJsonValue jv_symbol_value = json_obj.value(symbol);
             QJsonObject jo_symbol_value = jv_symbol_value.toObject();
-
-            QString current_symbol = symbol;
 
             QMap<QString, QString> inner_map;
             inner_map.insert("symbol", current_symbol);
             inner_map.insert("price", digit_format(jo_symbol_value.value("last")));
             inner_map.insert("price_24h", digit_format(jo_symbol_value.value("high24hr")));
             inner_map.insert("price_24l", digit_format(jo_symbol_value.value("low24hr")));
-            inner_map.insert("price_percent_change", digit_format(jo_symbol_value.value("percentChange"), 2));
+            // inner_map.insert("price_percent_change", digit_format(jo_symbol_value.value("percentChange"), 2)); // Incorrect output, error in Poloniex API
+
+            inner_map.insert("price_percent_change", digit_format(poloniex_price_percent_change(current_symbol, jo_symbol_value.value("last").toString().toDouble()), 2));
 
             // Set High/Low 24h price difference
             double d_H24 = jo_symbol_value.value("high24hr").toString().toDouble();
