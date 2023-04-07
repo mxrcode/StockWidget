@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+bool g_error_notifications = 1;
+
 QString get_hwid() {
     DWORD serialNum = 0;
     GetVolumeInformation(_T("C:\\"), NULL, 0, &serialNum, NULL, NULL, NULL, 0);
@@ -98,38 +100,57 @@ QString sha256_by_link(QString s_url) {
 QString digit_format_add (QString s, int decimal = 0) {
 
     try {
-        QStringList parts = s.split(".");
 
-        if (decimal == 0) {
-            long int_part = parts[0].toLong();
+        if (s.contains('.')) {
+            QStringList parts = s.split(".");
 
-            if (int_part >= 10) {
-                decimal = 2;
-            } else if (int_part <= 0) {
-                decimal = 6;
-            } else {
-                decimal = 4;
+            if (decimal == 0) {
+                long int_part = parts[0].toLong();
+
+                if (int_part >= 10) {
+                    decimal = 2;
+                } else if (int_part <= 0) {
+                    decimal = 6;
+                } else {
+                    decimal = 4;
+                }
+            }
+
+            QString decimal_part = parts[1];
+            decimal_part.chop(decimal_part.size() - decimal);
+            s = parts[0] + "." + decimal_part;
+
+            // Insert a space every 3 digits
+            int dot_index = s.indexOf(".");
+            if (dot_index == -1) return s; // number doesn't contain a dot
+
+            for (int i = dot_index - 3; i > 0; i -= 3) {
+                s.insert(i, ' ');
+            }
+
+            // Trim trailing zeros after dot
+            while (s.endsWith("0") && s.at(dot_index + 1) != '\0') {
+                if (s.at(s.size()-3) == '.') break;
+                s.chop(1);
+            }
+            if (s.endsWith(".")) s.chop(1);
+        } else {
+
+            QString tmp_s = s;
+            int tmp_s_size = tmp_s.size();
+
+            if (tmp_s_size > 3) {
+
+                s.clear();
+
+                for (int i = tmp_s_size-1; i >= 0; --i) {
+                    if (i % 3 == 0 && i != tmp_s_size-1) {
+                        s.insert(0, ' ');
+                    }
+                    s.insert(0, tmp_s[i]);
+                }
             }
         }
-
-        QString decimal_part = parts[1];
-        decimal_part.chop(decimal_part.size() - decimal);
-        s = parts[0] + "." + decimal_part;
-
-        // Insert a space every 3 digits
-        int dot_index = s.indexOf(".");
-        if (dot_index == -1) return s; // number doesn't contain a dot
-
-        for (int i = dot_index - 3; i > 0; i -= 3) {
-            s.insert(i, ' ');
-        }
-
-        // Trim trailing zeros after dot
-        while (s.endsWith("0") && s.at(dot_index + 1) != '\0') {
-            if (s.at(s.size()-3) == '.') break;
-            s.chop(1);
-        }
-        if (s.endsWith(".")) s.chop(1);
 
     } catch (...) {
         // ...
@@ -301,9 +322,11 @@ double poloniex_price_percent_change(QString symbol, double current_price) {
     return ((current_price - open_price)/open_price)*100;
 }
 
-QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list, bool& network_status)
+QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list, bool& network_status, QSystemTrayIcon& trayIcon)
 {
     QMap<QString, QMap<QString, QString>> output;
+
+    bool nonexistent_pair = false;
 
     if (current_sources == "binance_com" || current_sources == "binance_us") { // Binance (Global/US)
 
@@ -479,6 +502,7 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
                     QStringList pairs = symbol_list[i].split("-");
                     output.insert(symbol_list[i], return_null_map("ERROR", pairs.at(0)));
                     qInfo() << json_data.value("message").toString() << " : " << symbol_list[i];
+                    nonexistent_pair = true;
                     continue;
                 }
 
@@ -515,7 +539,10 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
             inner_map.insert("coin", pairs.at(0));
             output.insert(symbol_list[i], inner_map);
         }
+    }
 
+    if (g_error_notifications == 1 && nonexistent_pair == true) {
+        trayIcon.showMessage("Error", "Some trading pairs were not found on the exchange. Double-check symbols and make sure these pairs exist and are available for trading on your chosen exchange.", QIcon(":/img/icon.svg"), 5000);
     }
 
     return output;
@@ -632,6 +659,18 @@ int main(int argc, char *argv[])
 
                 continue;
             }
+            if (tmp.startsWith("$error_notifications:")) { // ERROR NOTIFICATIONS
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$error_notifications:", "");
+
+                g_error_notifications = tmp.toInt();
+
+                continue;
+            }
             if (tmp.startsWith("$")) continue; // Skip all other parameters
 
             symbol_list.append(tmp);
@@ -659,6 +698,7 @@ int main(int argc, char *argv[])
             fout << "$auto_update:" << "1" << Qt::endl;
             fout << "$always_on_top:" << "0" << Qt::endl;
             fout << "$data_sources:" << data_sources_current << Qt::endl;
+            fout << "$error_notifications:" << g_error_notifications << Qt::endl;
             fout << Qt::endl;
 
             for (QString symbol : symbol_list) {
@@ -692,12 +732,6 @@ int main(int argc, char *argv[])
     QObject::connect(configuratorAction, &QAction::triggered, &app, [&]() {
         configurator.show();
     });
-
-    // Add a "Edit Config" action to the menu
-//    QAction *editAction = trayMenu.addAction("Edit Config");
-//    QObject::connect(editAction, &QAction::triggered, &app, [&]() {
-//        QProcess::startDetached("notepad.exe", {CONFIG_NAME});
-//    });
 
     // Add a "Restart App" action to the menu
     QAction *restartAction = trayMenu.addAction("Restart App");
@@ -991,7 +1025,7 @@ int main(int argc, char *argv[])
         }
 
         bool network_status = 0; // 0 Normal, 1 Error
-        QMap<QString, QMap<QString, QString>> exchange_data = get_exchange_data(data_sources_current, symbol_list, network_status);
+        QMap<QString, QMap<QString, QString>> exchange_data = get_exchange_data(data_sources_current, symbol_list, network_status, trayIcon);
 
         if (network_status == 1) { // Try to reconnect after 15 seconds
             timer->setInterval(15*1000); // update every X ms

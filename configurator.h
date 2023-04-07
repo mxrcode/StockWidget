@@ -69,6 +69,8 @@ private slots:
 
     void on_dataSources_comboBox_currentIndexChanged(int index);
 
+    void on_error_notifications_checkBox_stateChanged(int arg1);
+
 private:
     Ui::Configurator *ui;
     QPoint m_drag_position;
@@ -79,6 +81,7 @@ private:
     QString m_text_style;
     QString m_symbols_string;
     QString m_always_on_top = "0";
+    QString m_error_notifications;
 
     QMap<QString, QString> m_data_sources;
     QString m_data_sources_current;

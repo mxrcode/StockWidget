@@ -767,6 +767,49 @@ QCheckBox:checked {
       <bool>false</bool>
      </property>
     </widget>
+    <widget class="QCheckBox" name="error_notifications_checkBox">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>51</y>
+       <width>171</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QCheckBox {
+	border: 0px solid black;
+	margin: 0px 0px 0px 17px;
+	background-color: rgba(255, 255, 255, 0);
+}
+QCheckBox:hover {
+	color: #B8B857;
+}
+QCheckBox:checked {
+	color: #B8B857;
+}</string>
+     </property>
+     <property name="text">
+      <string>Error notifications</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
    </widget>
    <widget class="QLabel" name="dataSources_label">
     <property name="geometry">

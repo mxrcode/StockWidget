@@ -100,6 +100,18 @@ Configurator::Configurator(QWidget *parent) :
 
                 continue;
             }
+            if (tmp.startsWith("$error_notifications:")) { // ERROR NOTIFICATION
+
+                // Delete comments after "//"
+                int index = tmp.indexOf("//");
+                if (index != -1) tmp = tmp.left(index);
+
+                tmp.replace("$error_notifications:", "");
+
+                m_error_notifications = tmp;
+
+                continue;
+            }
             if (tmp.startsWith("$")) continue; // Skip all other parameters
 
             symbol_list.append(tmp);
@@ -138,6 +150,8 @@ Configurator::Configurator(QWidget *parent) :
 
         warning_ui = new WarningUi;
         connect(this, &Configurator::setWarningUiText, warning_ui, &WarningUi::setTextBrowser);
+
+        ui->error_notifications_checkBox->setChecked(m_error_notifications.toInt());
     }
 
     // Add items to the QComboBox (dataSources_comboBox)
@@ -182,6 +196,7 @@ void Configurator::on_applyButton_clicked()
       fout << "$auto_update:" << m_auto_update << Qt::endl;
       fout << "$always_on_top:" << m_always_on_top << Qt::endl;
       fout << "$data_sources:" << m_data_sources_current << Qt::endl;
+      fout << "$error_notifications:" << m_error_notifications << Qt::endl;
       fout << Qt::endl;
 
       QVector<QString> symbol_list = ui->symbol_textEdit->toPlainText().split("\n");
@@ -263,4 +278,7 @@ void Configurator::on_dataSources_comboBox_currentIndexChanged(int index)
 {
     if (constructor_unlocked == true) m_data_sources_current = ui->dataSources_comboBox->currentData().toString();
 }
+
+// Error Notifications
+void Configurator::on_error_notifications_checkBox_stateChanged(int arg1) {m_error_notifications = (ui->error_notifications_checkBox->isChecked()) ? "1" : "0";}
 
