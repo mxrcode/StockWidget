@@ -8,6 +8,7 @@ This is how the configurator will look like in the new version of the widget (1.
 **List of supported cryptocurrency exchanges (API):**
 - Binance Global
 - Binance US
+- Coinbase
 - Poloniex
 
 *Due to the limits set by the exchange, the program cannot receive data more than once every 60sec. These restrictions can be removed by using WebSocket or the developer's servers (Which we don't have).*
