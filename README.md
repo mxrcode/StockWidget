@@ -1,7 +1,7 @@
 # StockWidget
 Widget for displaying the exchange rate of cryptocurrencies on the desktop in real time.
 
-![evehNw1](https://user-images.githubusercontent.com/123785508/219620683-a3b7edea-6e2e-4cc7-932d-270e51966d2d.png)
+![image](https://user-images.githubusercontent.com/123785508/230630082-d0c5a3b0-bf7c-459c-928e-faccf5047a45.png)
 
 This is how the configurator will look like in the new version of the widget (1.1.0).
 
