@@ -26,9 +26,10 @@ Configurator::Configurator(QWidget *parent) :
     // Initialize the m_data_sources
     m_data_sources = {
         {"binance_com", "Binance Global"},
-        {"binance_us", "Binance US"},
         {"coinbase_com", "Coinbase"},
-        {"poloniex_com", "Poloniex"}
+        {"poloniex_com", "Poloniex"},
+        {"kraken_com", "Kraken"},
+        {"binance_us", "Binance US"},
     };
 
     // Configurator : Get Data

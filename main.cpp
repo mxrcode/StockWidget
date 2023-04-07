@@ -97,74 +97,55 @@ QString sha256_by_link(QString s_url) {
 
 }
 
-QString digit_format_add (QString s, int decimal = 0) {
+QString digit_format_d (double value, int decimal = 0) {
 
-    try {
+    QString formatted_value = QString::number(value, 'f', 8);
+    QStringList parts = formatted_value.split('.');
+    QString left = parts[0];
+    QString right = parts[1];
+    QString result;
 
-        if (s.contains('.')) {
-            QStringList parts = s.split(".");
+    if (decimal == 0) {
+        long int_part = parts[0].toLong();
 
-            if (decimal == 0) {
-                long int_part = parts[0].toLong();
-
-                if (int_part >= 10) {
-                    decimal = 2;
-                } else if (int_part <= 0) {
-                    decimal = 6;
-                } else {
-                    decimal = 4;
-                }
-            }
-
-            QString decimal_part = parts[1];
-            decimal_part.chop(decimal_part.size() - decimal);
-            s = parts[0] + "." + decimal_part;
-
-            // Insert a space every 3 digits
-            int dot_index = s.indexOf(".");
-            if (dot_index == -1) return s; // number doesn't contain a dot
-
-            for (int i = dot_index - 3; i > 0; i -= 3) {
-                s.insert(i, ' ');
-            }
-
-            // Trim trailing zeros after dot
-            while (s.endsWith("0") && s.at(dot_index + 1) != '\0') {
-                if (s.at(s.size()-3) == '.') break;
-                s.chop(1);
-            }
-            if (s.endsWith(".")) s.chop(1);
+        if (int_part >= 10) {
+            decimal = 2;
+        } else if (int_part <= 0) {
+            decimal = 6;
         } else {
-
-            QString tmp_s = s;
-            int tmp_s_size = tmp_s.size();
-
-            if (tmp_s_size > 3) {
-
-                s.clear();
-
-                for (int i = tmp_s_size-1; i >= 0; --i) {
-                    if (i % 3 == 0 && i != tmp_s_size-1) {
-                        s.insert(0, ' ');
-                    }
-                    s.insert(0, tmp_s[i]);
-                }
-            }
+            decimal = 4;
         }
+    }
+    right.chop(right.size() - decimal);
 
-    } catch (...) {
-        // ...
+    int count = 0;
+    for (int i = left.length() - 1; i >= 0; i--) {
+        result.prepend(left[i]);
+        count++;
+        if (count == 3 && i > 0) {
+            result.prepend(' ');
+            count = 0;
+        }
+    }
+    result.append('.');
+
+    while (right.endsWith("0") && right.size() > 2) {
+        right.chop(1);
     }
 
-    return s;
+    result.append(right);
+
+    qInfo() << result;
+
+    return result;
 }
 
 QString digit_format (QJsonValue value, int decimal = 0) {
-    return digit_format_add(value.toString(), decimal);
+    return digit_format_d(value.toString().toDouble(), decimal);
 }
 
 QString digit_format (double value, int decimal = 0) {
-    return digit_format_add(QString::number(value), decimal);
+    return digit_format_d(value, decimal);
 }
 
 void message_handler(QtMsgType type, const QMessageLogContext &context, const QString &msg) // Part for outputting debug info to qInfo.log
@@ -322,13 +303,36 @@ double poloniex_price_percent_change(QString symbol, double current_price) {
     return ((current_price - open_price)/open_price)*100;
 }
 
+QString kraken_symbol_alternatives(QString symbol) {
+
+    QMap<QString, QString> alternatives;
+
+    alternatives.insert("XBT", "BTC");
+    alternatives.insert("XDG", "DOGE");
+
+    foreach(QString alt, alternatives.keys()) {
+        if(symbol.contains(alt)) {
+            symbol.replace(alt, alternatives.value(alt));
+            break;
+        }
+    }
+
+    QString target = "USD";
+    int index = symbol.indexOf(target);
+    if (index != -1) {
+        symbol.insert(index, "-");
+    }
+
+    return symbol;
+}
+
 QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources, QVector<QString> symbol_list, bool& network_status, QSystemTrayIcon& trayIcon)
 {
     QMap<QString, QMap<QString, QString>> output;
 
     bool nonexistent_pair = false;
 
-    if (current_sources == "binance_com" || current_sources == "binance_us") { // Binance (Global/US)
+    if (current_sources == "binance_com" || current_sources == "binance_us") { // www.binance.com & www.binance.us
 
         QJsonArray symbols_json;
         for (const auto &symbol : symbol_list) {
@@ -406,7 +410,7 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         }
 
     }
-    else if (current_sources == "poloniex_com") {
+    else if (current_sources == "poloniex_com") { // poloniex.com
 
         // Create a network manager.
         QNetworkAccessManager manager;
@@ -469,7 +473,7 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         }
 
     }
-    else if (current_sources == "coinbase_com") { // Coinbase.com
+    else if (current_sources == "coinbase_com") { // www.coinbase.com
 
         for (int i = 0; i < symbol_list.size(); ++i) {
 
@@ -538,6 +542,100 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
             QStringList pairs = symbol_list[i].split("-");
             inner_map.insert("coin", pairs.at(0));
             output.insert(symbol_list[i], inner_map);
+        }
+    }
+    else if (current_sources == "kraken_com") { // www.kraken.com
+
+        QString symbols_to_request;
+
+        for (int i = 0; i < symbol_list.size(); i++) {
+            QString tmp = symbol_list[i];
+            tmp.replace("-", "");
+
+            if (i != 0) symbols_to_request += ",";
+            symbols_to_request += tmp;
+        }
+
+        // Create a network manager.
+        QNetworkAccessManager manager;
+
+        QNetworkRequest request(QUrl("https://api.kraken.com/0/public/Ticker?pair=" + symbols_to_request));
+        auto *reply = manager.get(request);
+
+        // Wait for the request to complete
+        QEventLoop event_loop;
+        QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
+        event_loop.exec();
+
+        // Get the response data.
+        QByteArray data = reply->readAll(); // Parse the JSON data and obtain a QVariant
+        QJsonDocument json_doc = QJsonDocument::fromJson(data);
+        QVariantMap json_data = json_doc.toVariant().toMap();
+
+        // Checking connection errors
+        if (reply->error() == QNetworkReply::NoError) {
+            network_status = 0;
+        } else if (reply->error() == QNetworkReply::TimeoutError) { // Handle the timeout error
+            network_status = 1;
+            qInfo() << "Network request timed out";
+        } else { // Handle other errors
+            network_status = 1;
+            qInfo() << "Network request error: " << reply->errorString();
+        }
+
+        // It checks if there are any messages. They usually appear when we ask for a pair that doesn't exist.
+        if (data.contains("Unknown")) {
+            qInfo() << "Unknown asset pairs";
+            nonexistent_pair = true;
+        }
+
+        if (network_status == 1 || nonexistent_pair == true) {
+            for (int i = 0; i < symbol_list.size(); ++i) {
+                output.insert(symbol_list[i], return_null_map());
+            }
+        }
+
+        if (network_status == 0 && nonexistent_pair == false) {
+
+            // Loop through each symbol and extract the relevant information
+            for (auto iter = json_data["result"].toMap().cbegin(); iter != json_data["result"].toMap().cend(); ++iter) {
+
+                QString symbol = iter.key(); // Get the symbol name
+                QVariantMap symbol_data = iter.value().toMap(); // Get the symbol data
+
+                symbol = kraken_symbol_alternatives(symbol);
+
+                // Parse the "c" section of the symbol
+                QVariantList c_list = symbol_data.value("c").toList();
+                double last_price = c_list.at(0).toDouble();
+
+                double open_price = symbol_data.value("o").toDouble(); // Parse the "o" section of the symbol
+
+                // Parse the "l" section of the symbol
+                QVariantList l_list = symbol_data.value("l").toList();
+                double low_price = l_list.at(0).toDouble();
+
+                // Parse the "h" section of the symbol
+                QVariantList h_list = symbol_data.value("h").toList();
+                double high_price = h_list.at(0).toDouble();
+
+                QMap<QString, QString> inner_map;
+                inner_map.insert("symbol", symbol);
+                inner_map.insert("price", digit_format(last_price));
+                inner_map.insert("price_24h", digit_format(high_price));
+                inner_map.insert("price_24l", digit_format(low_price));
+
+                // Calculate price percent change manually
+                double price_percent_change = ((last_price - open_price) / open_price) * 100;
+                inner_map.insert("price_percent_change", digit_format(price_percent_change, 2));
+
+                // Set High/Low 24h price difference
+                inner_map.insert("price_difference", digit_format((high_price-low_price)/(low_price/100), 2));
+
+                QStringList pairs = symbol.split("-");
+                inner_map.insert("coin", pairs.first());
+                output.insert(symbol, inner_map);
+            }
         }
     }
 
