@@ -21,6 +21,39 @@ long version_convert(QString version) {
     return major * 1000000 + minor * 10000 + patch * 100;
 }
 
+QByteArray http_request(QUrl url, bool &network_status, QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[get_update_info]") {
+
+    // Create a network manager.
+    QNetworkAccessManager manager;
+
+    QNetworkRequest request(url);
+    request.setRawHeader("User-Agent", user_agent.toUtf8());
+    auto *reply = manager.get(request);
+
+    // Wait for the request to complete
+    QEventLoop event_loop;
+    QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
+    event_loop.exec();
+
+    // Get the response data.
+    QByteArray data = reply->readAll();
+
+    // Checking connection errors
+    if (reply->error() == QNetworkReply::NoError) {
+        network_status = 0;
+    } else if (reply->error() == QNetworkReply::TimeoutError) { // Handle the timeout error
+        network_status = 1;
+        qInfo() << "Network request timed out";
+    } else { // Handle other errors
+        network_status = 1;
+        qInfo() << "Network request error: " << reply->errorString();
+    }
+
+    reply->deleteLater();
+
+    return data;
+}
+
 struct UpdateInfo {
     QString status;
     QString endpoint;
@@ -38,18 +71,10 @@ UpdateInfo getUpdateInfo()
 
     try {
 
-        QNetworkAccessManager *manager = new QNetworkAccessManager();
-        QUrl url("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/v1/getUpdate");
-        QNetworkRequest request(url);
-        QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[get_update_info]";
-        request.setRawHeader("User-Agent", user_agent.toUtf8());
+        bool network_status = 0;
 
-        QNetworkReply *reply = manager->get(request);
-        QEventLoop loop;
-        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        loop.exec();
+        QByteArray data = http_request(QUrl("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/v1/getUpdate"), network_status);
 
-        QByteArray data = reply->readAll();
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
         QJsonObject jsonObj = jsonDoc.object();
 
@@ -67,8 +92,6 @@ UpdateInfo getUpdateInfo()
             info.user_ip = jsonObj.value("user-ip").toString();
         }
 
-        reply->deleteLater();
-
     } catch (...) {
     }
 
@@ -77,19 +100,12 @@ UpdateInfo getUpdateInfo()
 
 QString sha256_by_link(QString s_url) {
 
-    QNetworkAccessManager manager;
-    QUrl url(s_url);
-    QNetworkRequest request(url);
+    bool network_status = 0;
+
     QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[download_sha256]";
-    request.setRawHeader("User-Agent", user_agent.toUtf8());
-    QNetworkReply *reply = manager.get(request);
 
-    // Wait for the request to complete
-    QEventLoop eventLoop;
-    QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
-    eventLoop.exec();
+    QString t_sha256 = http_request(QUrl(s_url), network_status, user_agent);
 
-    QString t_sha256 = reply->readAll();
     int length = t_sha256.indexOf(" ");
     QString sha256 = t_sha256.left(length);
 
@@ -273,23 +289,11 @@ QMap<QString, QString> return_null_map (QString text = "net", QString coin = "ne
     return inner_map;
 }
 
-double poloniex_price_percent_change(QString symbol, double current_price) {
+double poloniex_price_percent_change(QString symbol, double current_price, bool &network_status) {
 
     qint64 current_utime = QDateTime::currentSecsSinceEpoch();
 
-    // Create a network manager.
-    QNetworkAccessManager manager;
-
-    QNetworkRequest request(QUrl("https://poloniex.com/public?command=returnChartData&currencyPair=" + symbol + "&start=" + QString::number(current_utime-86400) + "&end=" + QString::number(current_utime) + "&period=300"));
-    auto *reply = manager.get(request);
-
-    // Wait for the request to complete
-    QEventLoop event_loop;
-    QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
-    event_loop.exec();
-
-    // Get the response data.
-    QByteArray data = reply->readAll();
+    QByteArray data = http_request(QUrl("https://poloniex.com/public?command=returnChartData&currencyPair=" + symbol + "&start=" + QString::number(current_utime-86400) + "&end=" + QString::number(current_utime) + "&period=300"), network_status);
 
     // Parse the JSON data and obtain a QVariant
     QJsonDocument json_doc = QJsonDocument::fromJson(data);
@@ -343,22 +347,10 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         QJsonDocument json_doc(symbols_json);
         QString json_string = json_doc.toJson(QJsonDocument::Compact);
 
-        // Create a network manager.
-        QNetworkAccessManager manager;
-
         QString domain = "api.binance.com";
         if (current_sources == "binance_us") domain = "api.binance.us";
 
-        QNetworkRequest request(QUrl("https://" + domain + "/api/v3/ticker/24hr?symbols=" + json_string));
-        auto *reply = manager.get(request);
-
-        // Wait for the request to complete
-        QEventLoop event_loop;
-        QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
-        event_loop.exec();
-
-        // Get the response data.
-        QByteArray data = reply->readAll();
+        QByteArray data = http_request(QUrl("https://" + domain + "/api/v3/ticker/24hr?symbols=" + json_string), network_status);
 
         // Parse the JSON data
         QJsonDocument doc = QJsonDocument::fromJson(data);
@@ -415,29 +407,17 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         // Create a network manager.
         QNetworkAccessManager manager;
 
-        QNetworkRequest request(QUrl("https://poloniex.com/public?command=returnTicker"));
-        auto *reply = manager.get(request);
-
-        // Wait for the request to complete
-        QEventLoop event_loop;
-        QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
-        event_loop.exec();
-
-        // Get the response data.
-        QByteArray data = reply->readAll();
+        QByteArray data = http_request(QUrl("https://poloniex.com/public?command=returnTicker"), network_status);
 
         // Parse the JSON data
         QJsonDocument doc = QJsonDocument::fromJson(data);
         QJsonObject json_obj = doc.object();
 
         // Checking connection errors
-        network_status = (json_obj.empty()) ? 1 : 0;
         if (network_status == 1) {
-
             for (int i = 0; i < symbol_list.size(); ++i) {
                 output.insert(symbol_list[i], return_null_map());
             }
-
             return output;
         }
 
@@ -461,7 +441,7 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
             inner_map.insert("price_24l", digit_format(jo_symbol_value.value("low24hr")));
             // inner_map.insert("price_percent_change", digit_format(jo_symbol_value.value("percentChange"), 2)); // Incorrect output, error in Poloniex API
 
-            inner_map.insert("price_percent_change", digit_format(poloniex_price_percent_change(current_symbol, jo_symbol_value.value("last").toString().toDouble()), 2));
+            inner_map.insert("price_percent_change", digit_format(poloniex_price_percent_change(current_symbol, jo_symbol_value.value("last").toString().toDouble(), network_status), 2));
 
             // Set High/Low 24h price difference
             double d_H24 = jo_symbol_value.value("high24hr").toString().toDouble();
@@ -477,41 +457,19 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
 
         for (int i = 0; i < symbol_list.size(); ++i) {
 
-            // Create a network manager.
-            QNetworkAccessManager manager;
+            QByteArray data = http_request(QUrl("https://api.exchange.coinbase.com/products/" + symbol_list[i] + "/stats"), network_status);
 
-            QNetworkRequest request(QUrl("https://api.exchange.coinbase.com/products/" + symbol_list[i] + "/stats"));
-            auto *reply = manager.get(request);
-
-            // Wait for the request to complete
-            QEventLoop event_loop;
-            QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
-            event_loop.exec();
-
-            // Get the response data.
-            QByteArray data = reply->readAll();            // Parse the JSON data and obtain a QVariant
+            // Parse the JSON data and obtain a QVariant
             QJsonDocument json_doc = QJsonDocument::fromJson(data);
             QVariantMap json_data = json_doc.toVariant().toMap();
 
-            // Checking connection errors
-            if (reply->error() == QNetworkReply::NoError) {
-                network_status = 0;
-            } else if (reply->error() == QNetworkReply::TimeoutError) { // Handle the timeout error
-                network_status = 1;
-                qInfo() << "Network request timed out";
-            } else { // Handle other errors
-
-                // It checks if there are any messages. They usually appear when we ask for a pair that doesn't exist.
-                if (json_data.contains("message")) {
-                    QStringList pairs = symbol_list[i].split("-");
-                    output.insert(symbol_list[i], return_null_map("ERROR", pairs.at(0)));
-                    qInfo() << json_data.value("message").toString() << " : " << symbol_list[i];
-                    nonexistent_pair = true;
-                    continue;
-                }
-
-                network_status = 1;
-                qInfo() << "Network request error: " << reply->errorString();
+            // It checks if there are any messages. They usually appear when we ask for a pair that doesn't exist.
+            if (network_status == 1 && json_data.contains("message")) {
+                QStringList pairs = symbol_list[i].split("-");
+                output.insert(symbol_list[i], return_null_map("ERROR", pairs.at(0)));
+                qInfo() << json_data.value("message").toString() << " : " << symbol_list[i];
+                nonexistent_pair = true;
+                continue;
             }
 
             if (network_status == 1) {
@@ -556,32 +514,11 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
             symbols_to_request += tmp;
         }
 
-        // Create a network manager.
-        QNetworkAccessManager manager;
+        QByteArray data = http_request(QUrl("https://api.kraken.com/0/public/Ticker?pair=" + symbols_to_request), network_status);
 
-        QNetworkRequest request(QUrl("https://api.kraken.com/0/public/Ticker?pair=" + symbols_to_request));
-        auto *reply = manager.get(request);
-
-        // Wait for the request to complete
-        QEventLoop event_loop;
-        QObject::connect(reply, &QNetworkReply::finished, &event_loop, &QEventLoop::quit);
-        event_loop.exec();
-
-        // Get the response data.
-        QByteArray data = reply->readAll(); // Parse the JSON data and obtain a QVariant
+        // Parse the JSON data and obtain a QVariant
         QJsonDocument json_doc = QJsonDocument::fromJson(data);
         QVariantMap json_data = json_doc.toVariant().toMap();
-
-        // Checking connection errors
-        if (reply->error() == QNetworkReply::NoError) {
-            network_status = 0;
-        } else if (reply->error() == QNetworkReply::TimeoutError) { // Handle the timeout error
-            network_status = 1;
-            qInfo() << "Network request timed out";
-        } else { // Handle other errors
-            network_status = 1;
-            qInfo() << "Network request error: " << reply->errorString();
-        }
 
         // It checks if there are any messages. They usually appear when we ask for a pair that doesn't exist.
         if (data.contains("Unknown")) {
