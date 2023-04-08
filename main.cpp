@@ -21,7 +21,7 @@ long version_convert(QString version) {
     return major * 1000000 + minor * 10000 + patch * 100;
 }
 
-QByteArray http_request(QUrl url, bool &network_status, QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[get_update_info]") {
+QByteArray http_request(QUrl url, bool &network_status, QString user_agent = SOFT_NAME + " " + SOFT_VERSION) {
 
     // Create a network manager.
     QNetworkAccessManager manager;
@@ -73,7 +73,9 @@ UpdateInfo getUpdateInfo()
 
         bool network_status = 0;
 
-        QByteArray data = http_request(QUrl("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/v1/getUpdate"), network_status);
+        QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[get_update_info]";
+
+        QByteArray data = http_request(QUrl("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/v1/getUpdate"), network_status, user_agent);
 
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
         QJsonObject jsonObj = jsonDoc.object();
@@ -150,8 +152,6 @@ QString digit_format_d (double value, int decimal = 0) {
     }
 
     result.append(right);
-
-    qInfo() << result;
 
     return result;
 }
