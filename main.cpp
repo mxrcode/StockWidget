@@ -356,51 +356,54 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
         QJsonDocument doc = QJsonDocument::fromJson(data);
         QJsonArray json_array = doc.array();
 
+        // It checks if there are any messages. They usually appear when we ask for a pair that doesn't exist.
+        if (data.contains("Invalid")) {
+            qInfo() << domain << ":" << data;
+            nonexistent_pair = true;
+        }
+
         // Checking connection errors
-        network_status = (json_array.empty()) ? 1 : 0;
-        if (network_status == 1) {
+        if (network_status == 1 || nonexistent_pair == true) {
 
             for (int i = 0; i < symbol_list.size(); ++i) {
                 output.insert(symbol_list[i], return_null_map());
             }
 
-            return output;
-        }
+        } else {
+            for (int i = 0; i < symbol_list.size(); ++i) {
 
-        for (int i = 0; i < symbol_list.size(); ++i) {
+                QJsonValue values = json_array[i];
+                QJsonObject obj = values.toObject();
 
-            QJsonValue values = json_array[i];
-            QJsonObject obj = values.toObject();
+                QString current_symbol = obj["symbol"].toString();
 
-            QString current_symbol = obj["symbol"].toString();
+                QMap<QString, QString> inner_map;
+                inner_map.insert("symbol", current_symbol);
+                inner_map.insert("price", digit_format(obj["lastPrice"]));
+                inner_map.insert("price_24h", digit_format(obj["highPrice"]));
+                inner_map.insert("price_24l", digit_format(obj["lowPrice"]));
+                inner_map.insert("price_percent_change", digit_format(obj["priceChangePercent"], 2));
 
-            QMap<QString, QString> inner_map;
-            inner_map.insert("symbol", current_symbol);
-            inner_map.insert("price", digit_format(obj["lastPrice"]));
-            inner_map.insert("price_24h", digit_format(obj["highPrice"]));
-            inner_map.insert("price_24l", digit_format(obj["lowPrice"]));
-            inner_map.insert("price_percent_change", digit_format(obj["priceChangePercent"], 2));
+                // Set High/Low 24h price difference
+                double d_H24 = obj["highPrice"].toString().toDouble();
+                double d_L24 = obj["lowPrice"].toString().toDouble();
+                inner_map.insert("price_difference", digit_format((d_H24-d_L24)/(d_L24/100), 2));
 
-            // Set High/Low 24h price difference
-            double d_H24 = obj["highPrice"].toString().toDouble();
-            double d_L24 = obj["lowPrice"].toString().toDouble();
-            inner_map.insert("price_difference", digit_format((d_H24-d_L24)/(d_L24/100), 2));
+                for (QString symbol : symbol_list) {
+                    QString raw = symbol;
+                    raw.replace("-", "");
 
-            for (QString symbol : symbol_list) {
-                QString raw = symbol;
-                raw.replace("-", "");
+                    if (raw == current_symbol) {
 
-                if (raw == current_symbol) {
+                        QStringList parts = symbol.split("-");
+                        inner_map.insert("coin", parts[0]);
 
-                    QStringList parts = symbol.split("-");
-                    inner_map.insert("coin", parts[0]);
-
-                    output.insert(symbol, inner_map);break;
+                        output.insert(symbol, inner_map);break;
+                    }
                 }
+
             }
-
         }
-
     }
     else if (current_sources == "poloniex_com") { // poloniex.com
 
@@ -432,6 +435,18 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
             QString current_symbol = symbol;
 
             QJsonValue jv_symbol_value = json_obj.value(symbol);
+
+            // It checks if there are any messages. They usually appear when we ask for a pair that doesn't exist.
+            if (jv_symbol_value.isUndefined()) {
+
+                QStringList pairs = symbol_list[i].split("-");
+                output.insert(symbol_list[i], return_null_map("ERROR", pairs.at(0)));
+                qInfo() << "Pair that doesn't exist" << " : " << symbol_list[i];
+
+                nonexistent_pair = true;
+                continue;
+            }
+
             QJsonObject jo_symbol_value = jv_symbol_value.toObject();
 
             QMap<QString, QString> inner_map;
