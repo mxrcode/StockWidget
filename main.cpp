@@ -768,7 +768,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Tray Block
+    /* Tray Block */
     // Create a tray icon and a menu
     QSystemTrayIcon trayIcon;
     QMenu trayMenu;
