@@ -860,6 +860,18 @@ int main(int argc, char *argv[])
     QAction *closeAction = trayMenu.addAction("Close");
     QObject::connect(closeAction, &QAction::triggered, &app, &QApplication::quit);
 
+    // Show Configurator
+    QObject::connect(&trayIcon, &QSystemTrayIcon::activated, &app, [&](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::Trigger) {
+            if (configurator.isHidden()) {
+                configurator.show();
+                configurator.raise();
+            } else {
+                configurator.hide();
+            }
+        }
+    });
+
     // Set the tray icon and menu
     trayIcon.setContextMenu(&trayMenu);
 
