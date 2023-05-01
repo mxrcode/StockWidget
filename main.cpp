@@ -3,12 +3,12 @@
 
 bool g_error_notifications = 1;
 
-QString get_hwid() {
+QByteArray get_hwid() {
     return QSysInfo::machineUniqueId();
 }
 
 QString get_client_id() {
-    return "client[" + get_hwid() + "]";
+    return "client[" + QCryptographicHash::hash(get_hwid(), QCryptographicHash::Blake2b_512).toHex() + "]";
 }
 
 long version_convert(QString version) {
@@ -75,21 +75,21 @@ UpdateInfo getUpdateInfo()
 
         QByteArray data = http_request(QUrl("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/v1/getUpdate"), network_status, user_agent);
 
-        QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
-        QJsonObject jsonObj = jsonDoc.object();
+        QJsonDocument json_doc = QJsonDocument::fromJson(data);
+        QJsonObject json_obj = json_doc.object();
 
-        QString status = jsonObj.value("status").toString();
+        QString status = json_obj.value("status").toString();
 
         if (status == "OK") {
             // Get values from JSON object
             info.status = status;
-            info.endpoint = jsonObj.value("endpoint").toString();
-            info.latest_version = jsonObj.value("latest_version").toInt();
-            info.latest_version_string = jsonObj.value("latest_version_string").toString();
-            info.update_available = (bool)jsonObj.value("update_available").toString().toInt();
-            info.update_url = jsonObj.value("update_url").toString();
-            info.update_url_sha256 = jsonObj.value("update_url_sha256").toString();
-            info.user_ip = jsonObj.value("user-ip").toString();
+            info.endpoint = json_obj.value("endpoint").toString();
+            info.latest_version = json_obj.value("latest_version").toInt();
+            info.latest_version_string = json_obj.value("latest_version_string").toString();
+            info.update_available = (bool)json_obj.value("update_available").toString().toInt();
+            info.update_url = json_obj.value("update_url").toString();
+            info.update_url_sha256 = json_obj.value("update_url_sha256").toString();
+            info.user_ip = json_obj.value("user-ip").toString();
         }
 
     } catch (...) {
