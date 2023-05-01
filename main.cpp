@@ -4,9 +4,7 @@
 bool g_error_notifications = 1;
 
 QString get_hwid() {
-    DWORD serialNum = 0;
-    GetVolumeInformation(_T("C:\\"), NULL, 0, &serialNum, NULL, NULL, NULL, 0);
-    return QString::number(serialNum);
+    return QSysInfo::machineUniqueId();
 }
 
 QString get_client_id() {
@@ -602,7 +600,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    qInstallMessageHandler(message_handler); // Output debug info to qInfo.log
+    // qInstallMessageHandler(message_handler); // Output debug info to qInfo.log
 
     // Create the main window
     MainWindow mainWindow;
