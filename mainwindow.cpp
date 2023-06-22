@@ -22,7 +22,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::icon_taskbar_hider()
 {
-    // Костыль для скрытия icon из taskbar
+    // taskbar icon hide
     HWND hWnd = (HWND)winId();
     SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_TOOLWINDOW);
 }

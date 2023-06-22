@@ -41,6 +41,8 @@
 #include <QCryptographicHash>
 #include <QStandardPaths>
 
+#include <QFontDatabase>
+
 #include "qvlabel.hpp"
 
 #include "configurator.h"

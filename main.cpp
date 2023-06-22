@@ -596,11 +596,72 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
     return output;
 }
 
+bool check_font(QString font_name) {
+    QString font_path = QDir::currentPath() + "/" + font_name;
+    QFile font_file(font_path);
+    return font_file.exists();
+}
+
+void font_download(QString font_name) {
+
+    QUrl url("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/storage/Roboto.ttf");
+
+    QNetworkAccessManager manager;
+    QNetworkRequest request(url);
+    QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[download_font]";
+    request.setRawHeader("User-Agent", user_agent.toUtf8());
+    QNetworkReply *reply = manager.get(request);
+
+    // Wait for the request to complete
+    QEventLoop eventLoop;
+    QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
+    eventLoop.exec();
+
+    if (reply->error() != QNetworkReply::NoError) {
+        qInfo() << "Error downloading font:" << reply->errorString();
+        return;
+    }
+
+    QString font_path = QDir::currentPath() + "/" + font_name;
+
+    if (reply->error() == QNetworkReply::NoError) {
+        QFile font_file(font_path);
+        if (font_file.open(QIODevice::WriteOnly)) {
+            font_file.write(reply->readAll());
+            font_file.close();
+        }
+    }
+
+    reply->deleteLater();
+
+    return;
+}
+
+bool load_font(const QString& font_path)
+{
+    QFontDatabase font_db;
+
+    int id = font_db.addApplicationFont(font_path);
+
+    if (id == -1) return false;
+
+    QStringList font_families = font_db.applicationFontFamilies(id);
+
+    return true;
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    // qInstallMessageHandler(message_handler); // Output debug info to qInfo.log
+    qInstallMessageHandler(message_handler); // Output debug info to qInfo.log
+
+    QString font_file_path = "Roboto.ttf";
+    if (!check_font(font_file_path)) font_download(font_file_path); // Checking for the "Roboto.ttf" file
+
+    if (!load_font(font_file_path)) {
+        qInfo() << "Error loading font \"Roboto.ttf\"";
+    }
 
     // Create the main window
     MainWindow mainWindow;
@@ -779,6 +840,8 @@ int main(int argc, char *argv[])
     QAction *configuratorAction = trayMenu.addAction("Edit Config");
     QObject::connect(configuratorAction, &QAction::triggered, &app, [&]() {
         configurator.show();
+        configurator.isActiveWindow();
+        configurator.raise();
     });
 
     // Add a "Restart App" action to the menu
@@ -863,6 +926,7 @@ int main(int argc, char *argv[])
         if (reason == QSystemTrayIcon::Trigger) {
             if (configurator.isHidden()) {
                 configurator.show();
+                configurator.isActiveWindow();
                 configurator.raise();
             } else {
                 configurator.hide();
