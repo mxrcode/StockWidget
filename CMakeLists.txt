@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(StockWidget VERSION 1.1.1 LANGUAGES CXX)
+project(StockWidget VERSION 1.2.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -11,9 +11,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core Gui Network Concurrent)
-
-# Add minizip source code
-# add_subdirectory(minizip)
 
 include(FetchContent)
 
@@ -26,20 +23,20 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(minizip)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp mainwindow.h mainwindow.ui
-        configurator.h configurator.cpp configurator.ui
-        aboutqt.h aboutqt.cpp aboutqt.ui
-        aboutme.h aboutme.cpp aboutme.ui
-        warningui.h warningui.cpp warningui.ui
-        version.h
-        qvlabel.hpp
+        src/main.cpp
+        src/mainwindow.cpp src/mainwindow.h src/mainwindow.ui
+        src/configurator.h src/configurator.cpp src/configurator.ui
+        src/aboutqt.h src/aboutqt.cpp src/aboutqt.ui
+        src/aboutme.h src/aboutme.cpp src/aboutme.ui
+        src/warningui.h src/warningui.cpp src/warningui.ui
+        src/version.h
+        src/qvlabel.hpp
 )
 
 qt_add_executable(StockWidget
     MANUAL_FINALIZATION
-    application.qrc
-    recources.rc
+    resources/application.qrc
+    resources/recources.rc
     ${PROJECT_SOURCES}
 )
 

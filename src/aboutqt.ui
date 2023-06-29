@@ -20,7 +20,7 @@
    <string>About Qt</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="application.qrc">
+   <iconset resource="../resources/application.qrc">
     <normaloff>:/img/icon.svg</normaloff>:/img/icon.svg</iconset>
   </property>
   <property name="autoFillBackground">
@@ -85,7 +85,7 @@ border: 1px solid #7A836E;</string>
        <string/>
       </property>
       <property name="pixmap">
-       <pixmap resource="application.qrc">:/img/icon.svg</pixmap>
+       <pixmap resource="../resources/application.qrc">:/img/icon.svg</pixmap>
       </property>
       <property name="scaledContents">
        <bool>true</bool>
@@ -267,7 +267,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
   </widget>
  </widget>
  <resources>
-  <include location="application.qrc"/>
+  <include location="../resources/application.qrc"/>
  </resources>
  <connections/>
 </ui>

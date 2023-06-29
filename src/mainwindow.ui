@@ -20,7 +20,7 @@
    <string>StockWidget</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="application.qrc">
+   <iconset resource="../resources/application.qrc">
     <normaloff>:/img/icon-bg.svg</normaloff>:/img/icon-bg.svg</iconset>
   </property>
   <property name="styleSheet">
@@ -60,7 +60,7 @@
   </widget>
  </widget>
  <resources>
-  <include location="application.qrc"/>
+  <include location="../resources/application.qrc"/>
  </resources>
  <connections/>
 </ui>

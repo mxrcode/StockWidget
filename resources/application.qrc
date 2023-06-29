@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../img/color-dropper.svg</file>
+        <file>../img/icon.svg</file>
+        <file>../img/icon-bg.svg</file>
+        <file>../img/down_arrow.svg</file>
+    </qresource>
+</RCC>
