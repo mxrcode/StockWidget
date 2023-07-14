@@ -188,6 +188,7 @@ void file_remover (QString file_name) {
     return;
 }
 
+#ifdef Q_OS_WIN
 bool is_soft_in_autorun()
 {
     QString startup_dir = QDir::toNativeSeparators(QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).first()) + QDir::separator() + "Startup" + QDir::separator();
@@ -201,7 +202,7 @@ bool is_soft_in_autorun()
     }
 }
 
-void add_soft_to_autorun(QApplication &app) { // Another way to create .lnk in Windows
+void add_soft_to_autorun() {
 
     QString startup_dir = QDir::toNativeSeparators(QStandardPaths::standardLocations(QStandardPaths::ApplicationsLocation).first()) + QDir::separator() + "Startup" + QDir::separator();
     QString lnk_path = startup_dir + SOFT_NAME + ".lnk";
@@ -216,8 +217,8 @@ void add_soft_to_autorun(QApplication &app) { // Another way to create .lnk in W
     HRESULT result = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, reinterpret_cast<void**>(&shell_link));
     if (result == S_OK) {
         IPersistFile *persist_file;
-        shell_link->SetPath(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(app.applicationFilePath()).utf16()));
-        shell_link->SetWorkingDirectory(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(app.applicationDirPath()).utf16()));
+        shell_link->SetPath(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(qApp->applicationFilePath()).utf16()));
+        shell_link->SetWorkingDirectory(reinterpret_cast<const wchar_t *>(QDir::toNativeSeparators(qApp->applicationDirPath()).utf16()));
         result = shell_link->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&persist_file));
         if (result == S_OK) {
             persist_file->Save(reinterpret_cast<const wchar_t *>(lnk_path.utf16()), TRUE);
@@ -238,6 +239,53 @@ void remove_soft_from_autorun()
         link.remove();
     }
 }
+#else
+bool is_soft_in_autorun()
+{
+    QString autostart_dir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + QDir::separator() + "autostart" + QDir::separator();
+    QString desktop_file_path = autostart_dir + SOFT_NAME + ".desktop";
+
+    QFile desktop_file(desktop_file_path);
+    return desktop_file.exists();
+}
+
+void add_soft_to_autorun()
+{
+    QString autostart_dir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + QDir::separator() + "autostart" + QDir::separator();
+
+    // Create an autostart folder if it does not exist
+    QDir().mkpath(autostart_dir);
+
+    QString desktop_file_path = autostart_dir + SOFT_NAME + ".desktop";
+
+    QFile desktop_file(desktop_file_path);
+    if (desktop_file.exists()) {
+        desktop_file.remove();
+    }
+
+    QString desktop_file_content = "[Desktop Entry]\n"
+                                   "Type=Application\n"
+                                   "Exec=" + QCoreApplication::applicationFilePath() + "\n"
+                                                                               "Path=" + QCoreApplication::applicationDirPath() + "\n"
+                                                                              "Name=" + SOFT_NAME + "\n";
+
+    desktop_file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream stream(&desktop_file);
+    stream << desktop_file_content;
+    desktop_file.close();
+}
+
+void remove_soft_from_autorun()
+{
+    QString autostart_dir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + QDir::separator() + "autostart" + QDir::separator();
+    QString desktop_file_path = autostart_dir + SOFT_NAME + ".desktop";
+
+    QFile desktop_file(desktop_file_path);
+    if (desktop_file.exists()) {
+        desktop_file.remove();
+    }
+}
+#endif
 
 void replace_or_add_str_to_file (const QString& filename, const QString& search_str, const QString& new_str) {
 
@@ -858,10 +906,11 @@ int main(int argc, char *argv[])
     QAction *autorunAction = trayMenu.addAction("Autorun");
     autorunAction->setCheckable(true);
     autorunAction->setChecked(is_soft_in_autorun());
+
     // Add the action to toggle "Autorun" to the tray menu
     QObject::connect(autorunAction, &QAction::toggled, [&](bool checked) {
         if (checked) {
-            add_soft_to_autorun(app);
+            add_soft_to_autorun();
         } else {
             remove_soft_from_autorun();
         }

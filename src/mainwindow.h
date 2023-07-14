@@ -50,11 +50,12 @@
 #include "aboutme.h"
 #include "warningui.h"
 
-#include <Windows.h>
-#include <tchar.h>
 #include <string>
 
-#include <shlobj.h>
+#ifdef Q_OS_WIN
+    #include <windows.h>
+    #include <shlobj.h>
+#endif
 
 #include <unzip.h>
 
