@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(StockWidget VERSION 1.2.1 LANGUAGES CXX)
+project(StockWidget VERSION 1.3.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -17,7 +17,7 @@ include(FetchContent)
 FetchContent_Declare(
   minizip
   GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng
-  GIT_TAG 3.0.8
+  GIT_TAG 4.0.0
 )
 
 FetchContent_MakeAvailable(minizip)
