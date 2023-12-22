@@ -251,9 +251,26 @@ void Configurator::on_cancelButton_clicked()
 void Configurator::on_selectColor_button_clicked()
 {
     // Open the QColorDialog
-    QColorDialog colorDialog;
-    colorDialog.setWindowTitle("Select Color");
-    QColor color = colorDialog.getColor();
+    QColorDialog color_dialog;
+    color_dialog.setWindowTitle("Select Color");
+
+    // Get the current color from the currentColorLabel's style sheet
+    QString current_style_sheet = ui->currentColor_label->styleSheet();
+    QRegularExpression regex("rgba\\((\\d+),(\\d+),(\\d+),(\\d+)\\)");
+    QRegularExpressionMatch match = regex.match(current_style_sheet);
+
+    QColor current_color;
+
+    if (match.hasMatch()) {
+        int red = match.captured(1).toInt();
+        int green = match.captured(2).toInt();
+        int blue = match.captured(3).toInt();
+        int alpha = match.captured(4).toInt();
+
+        current_color = QColor(red, green, blue, alpha);
+    }
+
+    QColor color = color_dialog.getColor(current_color);
 
     // Check if the user selected a color
     if (color.isValid()) {
