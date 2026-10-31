@@ -1,7 +1,7 @@
 # StockWidget
 Widget for displaying the exchange rate of cryptocurrencies on the desktop in real time.
 
-![image](https://user-images.githubusercontent.com/123785508/230630082-d0c5a3b0-bf7c-459c-928e-faccf5047a45.png)
+<img width="811" height="837" alt="image" src="https://github.com/user-attachments/assets/23bff74a-5d1a-4230-9005-47beb40f0226" />
 
 **List of supported cryptocurrency exchanges (API):**
 - Binance Global
