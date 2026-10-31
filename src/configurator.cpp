@@ -24,6 +24,7 @@ static constexpr int kCatalogLifetimeSecs = 10 * 60;
 static constexpr int kQuoteButtons = 6;
 
 static const QColor kMissingPairColor("#FF8A80");
+static const QColor kHiddenPairColor("#899581");
 static const QColor kRiseColor("#7BD88F");
 static const QColor kFallColor("#FF8A80");
 
@@ -109,6 +110,9 @@ Configurator::Configurator(QWidget *parent) :
     connect(ui->downButton, &QPushButton::clicked, this, [this]() { move_selected_pair(1); });
     new QShortcut(QKeySequence::Delete, ui->selected_listWidget, [this]() { remove_selected_pairs(); }, Qt::WidgetShortcut);
 
+    // Checkbox toggled : dim the hidden pairs. Setting the same values again does not emit itemChanged, no loop.
+    connect(ui->selected_listWidget, &QListWidget::itemChanged, this, &Configurator::update_selected_item);
+
     connect(m_quote_group, &QButtonGroup::buttonClicked, this, [this](QAbstractButton *button) {
         m_quote_filter = button->property("quote_value").toString();
         apply_filter();
@@ -130,6 +134,7 @@ void Configurator::set_config(const Config &config)
     ui->selected_listWidget->clear();
     for (const QString &key : config.pairs) {
         add_pair(Config::source_of(key), Config::pair_of(key));
+        if (config.hidden_pairs.contains(key)) ui->selected_listWidget->currentItem()->setCheckState(Qt::Unchecked);
     }
     ui->selected_listWidget->clearSelection();
     ui->selected_listWidget->setCurrentRow(-1);
@@ -353,13 +358,18 @@ void Configurator::add_pair(const QString &source, const QString &pair)
 
     for (int i = 0; i < list->count(); ++i) {
         if (list->item(i)->data(Qt::UserRole).toString() == key) {
+            // Adding a hidden pair again shows it
+            list->item(i)->setCheckState(Qt::Checked);
             list->setCurrentRow(i);
             return;
         }
     }
 
+    // Unchecked pairs stay in the list but are not shown on the widget
     QListWidgetItem *item = new QListWidgetItem;
     item->setData(Qt::UserRole, key);
+    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+    item->setCheckState(Qt::Checked);
     update_selected_item(item);
     list->addItem(item);
     list->setCurrentItem(item);
@@ -447,6 +457,9 @@ void Configurator::update_selected_item(QListWidgetItem *item)
     if (missing) {
         item->setForeground(kMissingPairColor);
         item->setToolTip("Not found on " + name);
+    } else if (item->checkState() == Qt::Unchecked) {
+        item->setForeground(kHiddenPairColor);
+        item->setToolTip("Hidden from the widget, check to show");
     } else {
         item->setForeground(QBrush());
         item->setToolTip(QString());
@@ -496,8 +509,12 @@ void Configurator::on_applyButton_clicked()
     Config config = m_config;
 
     config.pairs.clear();
+    config.hidden_pairs.clear();
     for (int i = 0; i < ui->selected_listWidget->count(); ++i) {
-        config.pairs.append(ui->selected_listWidget->item(i)->data(Qt::UserRole).toString());
+        const QListWidgetItem *item = ui->selected_listWidget->item(i);
+        const QString key = item->data(Qt::UserRole).toString();
+        config.pairs.append(key);
+        if (item->checkState() == Qt::Unchecked) config.hidden_pairs.insert(key);
     }
 
     // Pairs of this exchange are written without the "exchange:" prefix

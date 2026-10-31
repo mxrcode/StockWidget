@@ -8,6 +8,18 @@
 #include <QSaveFile>
 #include <QTextStream>
 
+// Pair lines hidden from the widget : a comment for older versions
+static const QString kHiddenPrefix = "#off:";
+
+QStringList Config::shown_pairs() const
+{
+    QStringList shown;
+    for (const QString &key : pairs) {
+        if (!hidden_pairs.contains(key)) shown.append(key);
+    }
+    return shown;
+}
+
 QString Config::file_path()
 {
     return QDir(QCoreApplication::applicationDirPath()).filePath(CONFIG_NAME);
@@ -26,14 +38,18 @@ Config Config::load()
         return config;
     }
 
-    QStringList pair_lines;
+    QList<QPair<QString, bool>> pair_lines; // {line, hidden}
     QTextStream stream(&file);
     while (!stream.atEnd()) {
         const QString line = stream.readLine().trimmed();
+        if (line.startsWith(kHiddenPrefix)) {
+            pair_lines.append({line.mid(kHiddenPrefix.size()), true});
+            continue;
+        }
         if (line.isEmpty() || line.startsWith("//") || line.startsWith("#")) continue;
 
         if (!line.startsWith("$")) {
-            pair_lines.append(line);
+            pair_lines.append({line, false});
             continue;
         }
 
@@ -67,13 +83,16 @@ Config Config::load()
     }
 
     // Pairs are resolved at the end : $data_sources may follow them
-    for (const QString &line : pair_lines) {
+    for (const auto &[line, hidden] : pair_lines) {
         const int colon = line.indexOf(':');
         const QString source = colon == -1 ? config.data_source : line.left(colon).trimmed().toLower();
         const QString pair = normalize_pair(colon == -1 ? line : line.mid(colon + 1));
 
         const QString key = pair_key(source, pair);
-        if (!pair.isEmpty() && !config.pairs.contains(key)) config.pairs.append(key);
+        if (pair.isEmpty() || config.pairs.contains(key)) continue;
+
+        config.pairs.append(key);
+        if (hidden) config.hidden_pairs.insert(key);
     }
 
     return config;
@@ -85,7 +104,7 @@ bool Config::save() const
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
 
     QTextStream fout(&file);
-    fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair (\"exchange:PAIR\" for a non-default exchange)." << Qt::endl;
+    fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair (\"exchange:PAIR\" for a non-default exchange, \"" << kHiddenPrefix << "PAIR\" to hide it)." << Qt::endl;
     fout << Qt::endl;
     fout << "$text_style:" << text_style << Qt::endl;
     fout << "$position:" << position << Qt::endl;
@@ -97,6 +116,7 @@ bool Config::save() const
     fout << Qt::endl;
 
     for (const QString &key : pairs) {
+        if (hidden_pairs.contains(key)) fout << kHiddenPrefix;
         fout << (source_of(key) == data_source ? pair_of(key) : key) << Qt::endl;
     }
 

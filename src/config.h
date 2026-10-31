@@ -2,12 +2,14 @@
 #define CONFIG_H
 
 #include <QPoint>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 
 // Widget settings stored in CONFIG_NAME next to the executable.
 // File format: "$key:value" lines for options, one trading pair per line.
 // A pair line may name its exchange ("kraken_com:ETH-EUR"), otherwise $data_sources is used.
+// Pairs hidden from the widget are kept as "#off:" lines ("#off:BTC-USDT"), older versions skip them.
 struct Config
 {
     static constexpr int kMinRefreshInterval = 10;   // seconds
@@ -21,6 +23,10 @@ struct Config
     bool color_changes = true;
     int refresh_interval = 60; // seconds
     QStringList pairs; // Keys "exchange:PAIR", see pair_key()
+    QSet<QString> hidden_pairs; // Keys from pairs that are not shown on the widget
+
+    // Pairs shown on the widget, in order
+    QStringList shown_pairs() const;
 
     static QString file_path();
 

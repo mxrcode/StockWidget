@@ -159,13 +159,13 @@ QTabBar::tab:selected {
 QTabBar::tab:hover {
 	background-color: #3E4637;
 }
-QRadioButton::indicator, QCheckBox::indicator {
+QRadioButton::indicator, QCheckBox::indicator, QListWidget::indicator {
 	width: 12px;
 	height: 12px;
 	background-color: #3E4637;
 	border: 1px solid #7A836E;
 }
-QRadioButton::indicator:checked, QCheckBox::indicator:checked {
+QRadioButton::indicator:checked, QCheckBox::indicator:checked, QListWidget::indicator:checked {
 	background-color: #B8B857;
 }
 QRadioButton:checked, QCheckBox:checked, QRadioButton:hover, QCheckBox:hover {
@@ -510,7 +510,7 @@ QToolTip {
                  </size>
                 </property>
                 <property name="text">
-                 <string>Shown on the widget</string>
+                 <string>Checked pairs are shown on the widget</string>
                 </property>
                 <property name="section" stdset="0">
                  <bool>true</bool>

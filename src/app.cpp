@@ -102,7 +102,7 @@ void App::show_configurator()
 
 void App::apply_config(const Config &config)
 {
-    const bool pairs_changed = !m_config_applied || config.pairs != m_config.pairs || config.text_style != m_config.text_style;
+    const bool pairs_changed = !m_config_applied || config.shown_pairs() != m_config.shown_pairs() || config.text_style != m_config.text_style;
     const bool interval_changed = config.refresh_interval != m_config.refresh_interval;
 
     m_config = config;
@@ -111,7 +111,7 @@ void App::apply_config(const Config &config)
 
     m_widget.set_color_changes(m_config.color_changes);
     if (pairs_changed) {
-        m_widget.set_pairs(m_config.pairs, m_config.text_style);
+        m_widget.set_pairs(m_config.shown_pairs(), m_config.text_style);
     } else if (m_pending_exchanges == 0) {
         m_widget.show_tickers(m_round_tickers); // Redraw with the new colors
     }
@@ -154,7 +154,7 @@ void App::recreate_exchanges()
 {
     delete_exchanges();
 
-    for (const QString &key : std::as_const(m_config.pairs)) {
+    for (const QString &key : m_config.shown_pairs()) {
         const QString source = Config::source_of(key);
         if (m_exchanges.contains(source) || !Exchange::is_available(source)) continue;
 
@@ -174,7 +174,7 @@ void App::refresh()
     QHash<QString, QStringList> pairs_by_source;
     m_round_tickers.clear();
 
-    for (const QString &key : std::as_const(m_config.pairs)) {
+    for (const QString &key : m_config.shown_pairs()) {
         const QString source = Config::source_of(key);
         if (m_exchanges.contains(source)) {
             pairs_by_source[source].append(Config::pair_of(key));

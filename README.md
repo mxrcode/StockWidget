@@ -24,11 +24,11 @@ Widget for displaying the exchange rate of cryptocurrencies on the desktop in re
 
 ## Usage
 
-- **Pairs** : choose an exchange, search its pairs and add them to the widget. Each pair keeps its own exchange, so the widget can show BTC from Binance next to ETH-EUR from Kraken. Drag the pairs to change their order.
+- **Pairs** : choose an exchange, search its pairs and add them to the widget. Each pair keeps its own exchange, so the widget can show BTC from Binance next to ETH-EUR from Kraken. Drag the pairs to change their order. Uncheck a pair to hide it from the widget without removing it: add BTC-USDT from Binance and OKX once, then switch between them with the checkboxes.
 - **Appearance** : screen corner, text color, green / red price changes. The widget can also be dragged anywhere with the mouse (grab it by the text).
 - **Other** : refresh interval (10 seconds to 10 minutes), always on top, error notifications.
 
-The settings are stored in `config.cfg` next to the executable: one trading pair per line (`BTC-USDT`, or `kraken_com:ETH-EUR` for a pair from another exchange than `$data_sources`), options start with `$`. The log is written to `qInfo.log` in the same folder.
+The settings are stored in `config.cfg` next to the executable: one trading pair per line (`BTC-USDT`, or `kraken_com:ETH-EUR` for a pair from another exchange than `$data_sources`, `#off:BTC-USDT` for a hidden pair), options start with `$`. The log is written to `qInfo.log` in the same folder.
 
 ## Building
 
