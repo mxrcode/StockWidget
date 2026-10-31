@@ -4,6 +4,8 @@
 #include <QJsonObject>
 #include <QUrlQuery>
 
+#include <memory>
+
 // Binance answers 400 with this code for the whole request if one of the symbols does not exist
 static constexpr int kInvalidSymbolCode = -1121;
 
@@ -73,5 +75,56 @@ void BinanceExchange::fetch_one_by_one(const QStringList &pairs)
         if (response.http_status == 400) return Ticker::unknown_pair();
         if (!response.ok()) return Ticker::network_error();
         return parse_ticker(response.json().object());
+    });
+}
+
+void BinanceExchange::load_markets(MarketsCallback callback)
+{
+    // Pair names come from exchangeInfo, prices from the "MINI" tickers
+    struct State {
+        int pending = 2;
+        bool ok = true;
+        QJsonArray symbols;
+        QJsonArray tickers;
+    };
+    auto state = std::make_shared<State>();
+
+    auto done = [state, callback]() {
+        if (--state->pending > 0) return;
+        if (!state->ok) {
+            callback({}, false);
+            return;
+        }
+
+        QHash<QString, QJsonObject> tickers;
+        for (const QJsonValue &value : state->tickers) {
+            const QJsonObject obj = value.toObject();
+            tickers.insert(obj["symbol"].toString(), obj);
+        }
+
+        QList<Market> markets;
+        for (const QJsonValue &value : state->symbols) {
+            const QJsonObject obj = value.toObject();
+            const QJsonObject ticker = tickers.value(obj["symbol"].toString());
+
+            Market market;
+            market.pair = obj["baseAsset"].toString() + "-" + obj["quoteAsset"].toString();
+            market.last = number(ticker["lastPrice"]);
+            market.change_percent = change_percent(number(ticker["openPrice"]), market.last);
+            market.quote_volume = number(ticker["quoteVolume"]);
+            markets.append(market);
+        }
+        callback(markets, true);
+    };
+
+    get(QUrl("https://" + m_domain + "/api/v3/exchangeInfo?permissions=SPOT&symbolStatus=TRADING"), [state, done](const Response &response) {
+        state->ok = state->ok && response.ok();
+        state->symbols = response.json().object()["symbols"].toArray();
+        done();
+    });
+    get(QUrl("https://" + m_domain + "/api/v3/ticker/24hr?type=MINI"), [state, done](const Response &response) {
+        state->ok = state->ok && response.ok();
+        state->tickers = response.json().array();
+        done();
     });
 }

@@ -14,6 +14,15 @@
 
 class QNetworkAccessManager;
 
+// Trading pair listed on an exchange
+struct Market
+{
+    QString pair; // "BTC-USDT"
+    double last = 0;
+    double change_percent = 0;
+    double quote_volume = 0; // 24h volume in the quote currency, 0 if unknown
+};
+
 // Asynchronous client of an exchange public API.
 // fetch() requests 24h tickers and emits finished() exactly once per call.
 class Exchange : public QObject
@@ -21,14 +30,20 @@ class Exchange : public QObject
     Q_OBJECT
 
 public:
+    using MarketsCallback = std::function<void(const QList<Market> &markets, bool ok)>;
+
     explicit Exchange(QNetworkAccessManager *network, QObject *parent = nullptr);
 
     void fetch(const QStringList &pairs);
     bool is_busy() const { return m_busy; }
 
+    // All trading pairs of the exchange (for the pair search)
+    virtual void load_markets(MarketsCallback callback) = 0;
+
     // Supported data sources : {id used in the config, display name}
     static QList<QPair<QString, QString>> available();
     static bool is_available(const QString &id);
+    static QString display_name(const QString &id);
     static Exchange *create(const QString &id, QNetworkAccessManager *network, QObject *parent = nullptr);
 
 signals:
@@ -59,6 +74,8 @@ protected:
 
     // Exchanges return numbers both as JSON strings and as numbers
     static double number(const QJsonValue &value);
+
+    static double change_percent(double open, double last);
 
     static TickerMap all(const QStringList &pairs, const Ticker &ticker);
 

@@ -6,7 +6,6 @@
 #include <QApplication>
 #include <QDebug>
 
-static constexpr int kRefreshIntervalMs = 60 * 1000;
 static constexpr int kRetryIntervalMs = 15 * 1000; // After a network error
 
 App::App(QObject *parent)
@@ -19,12 +18,18 @@ App::App(QObject *parent)
         apply_config(config);
         save_config();
     });
+
+    connect(&m_widget, &MainWindow::moved, this, [this](const QString &position) {
+        m_config.position = position;
+        m_configurator.set_position(position);
+        save_config();
+    });
 }
 
 App::~App()
 {
     // Before the widget and the network manager are destroyed : no late replies
-    delete m_exchange;
+    qDeleteAll(m_exchanges);
 }
 
 void App::start()
@@ -96,23 +101,15 @@ void App::show_configurator()
 
 void App::apply_config(const Config &config)
 {
-    const bool source_changed = !m_exchange || config.data_source != m_config.data_source;
-    const bool pairs_changed = config.pairs != m_config.pairs || config.text_style != m_config.text_style;
+    const bool pairs_changed = !m_config_applied || config.pairs != m_config.pairs || config.text_style != m_config.text_style;
+    const bool interval_changed = config.refresh_interval != m_config.refresh_interval;
 
     m_config = config;
+    m_config_applied = true;
     if (!Exchange::is_available(m_config.data_source)) m_config.data_source = "binance_com";
 
-    if (source_changed) {
-        if (m_exchange) {
-            // Results of requests still in flight are no longer needed
-            m_exchange->disconnect(this);
-            m_exchange->deleteLater();
-        }
-        m_exchange = Exchange::create(m_config.data_source, &m_network, this);
-        connect(m_exchange, &Exchange::finished, this, &App::on_tickers);
-    }
-
-    if (source_changed || pairs_changed || m_widget.isHidden()) {
+    m_widget.set_color_changes(m_config.color_changes);
+    if (pairs_changed) {
         m_widget.set_pairs(m_config.pairs, m_config.text_style);
     }
     m_widget.place(m_config.position);
@@ -122,9 +119,13 @@ void App::apply_config(const Config &config)
 
     m_reported_unknown_pairs.clear();
 
-    if (source_changed || pairs_changed) {
+    if (pairs_changed) {
+        // Results of the requests still in flight are for the old pairs
+        recreate_exchanges();
         m_timer.stop();
         refresh();
+    } else if (interval_changed && m_pending_exchanges == 0) {
+        m_timer.start(m_config.refresh_interval * 1000);
     }
 }
 
@@ -136,37 +137,93 @@ void App::save_config()
     m_warning.show();
 }
 
-void App::refresh()
+void App::delete_exchanges()
 {
-    // A refresh is already running, the timer is restarted when it finishes
-    if (m_exchange->is_busy()) return;
-
-    m_exchange->fetch(m_config.pairs);
+    for (Exchange *exchange : std::as_const(m_exchanges)) {
+        exchange->disconnect(this);
+        exchange->deleteLater();
+    }
+    m_exchanges.clear();
+    m_pending_exchanges = 0;
 }
 
-void App::on_tickers(const TickerMap &tickers)
+void App::recreate_exchanges()
 {
-    m_widget.show_tickers(tickers);
+    delete_exchanges();
+
+    for (const QString &key : std::as_const(m_config.pairs)) {
+        const QString source = Config::source_of(key);
+        if (m_exchanges.contains(source) || !Exchange::is_available(source)) continue;
+
+        Exchange *exchange = Exchange::create(source, &m_network, this);
+        connect(exchange, &Exchange::finished, this, [this, source](const TickerMap &tickers) {
+            on_exchange_finished(source, tickers);
+        });
+        m_exchanges.insert(source, exchange);
+    }
+}
+
+void App::refresh()
+{
+    // The timer is restarted when the current round finishes
+    if (m_pending_exchanges > 0) return;
+
+    QHash<QString, QStringList> pairs_by_source;
+    m_round_tickers.clear();
+
+    for (const QString &key : std::as_const(m_config.pairs)) {
+        const QString source = Config::source_of(key);
+        if (m_exchanges.contains(source)) {
+            pairs_by_source[source].append(Config::pair_of(key));
+        } else {
+            m_round_tickers.insert(key, Ticker::unknown_pair()); // Misspelled exchange in the config
+        }
+    }
+
+    if (pairs_by_source.isEmpty()) {
+        on_round_finished();
+        return;
+    }
+
+    m_pending_exchanges = pairs_by_source.size();
+    for (auto it = pairs_by_source.constBegin(); it != pairs_by_source.constEnd(); ++it) {
+        m_exchanges[it.key()]->fetch(it.value());
+    }
+}
+
+void App::on_exchange_finished(const QString &source, const TickerMap &tickers)
+{
+    for (auto it = tickers.constBegin(); it != tickers.constEnd(); ++it) {
+        m_round_tickers.insert(Config::pair_key(source, it.key()), it.value());
+    }
+
+    if (--m_pending_exchanges == 0) on_round_finished();
+}
+
+void App::on_round_finished()
+{
+    m_widget.show_tickers(m_round_tickers);
 
     bool network_error = false;
     QStringList new_unknown_pairs;
 
-    for (auto it = tickers.constBegin(); it != tickers.constEnd(); ++it) {
+    for (auto it = m_round_tickers.constBegin(); it != m_round_tickers.constEnd(); ++it) {
         if (it.value().status == Ticker::Status::NetworkError) {
             network_error = true;
         } else if (it.value().status == Ticker::Status::UnknownPair && !m_reported_unknown_pairs.contains(it.key())) {
-            new_unknown_pairs.append(it.key());
             m_reported_unknown_pairs.insert(it.key());
+            new_unknown_pairs.append(Config::pair_of(it.key()) + " (" + Exchange::display_name(Config::source_of(it.key())) + ")");
         }
     }
 
     if (!new_unknown_pairs.isEmpty()) {
-        qInfo() << "Pairs not found on" << m_config.data_source << ":" << new_unknown_pairs;
+        qInfo() << "Pairs not found :" << new_unknown_pairs;
 
         if (m_config.error_notifications) {
-            m_tray.showMessage("Error", "Some trading pairs were not found on the exchange (" + new_unknown_pairs.join(", ") + "). Double-check symbols and make sure these pairs exist and are available for trading on your chosen exchange.", QIcon(":/img/icon.svg"), 5000);
+            m_tray.showMessage("Error", "Some trading pairs were not found on the exchange: " + new_unknown_pairs.join(", ") + ". Double-check symbols and make sure these pairs exist and are available for trading on your chosen exchange.", QIcon(":/img/icon.svg"), 5000);
         }
     }
 
-    m_timer.start(network_error ? kRetryIntervalMs : kRefreshIntervalMs);
+    const int interval_ms = m_config.refresh_interval * 1000;
+    m_timer.start(network_error ? qMin(kRetryIntervalMs, interval_ms) : interval_ms);
 }

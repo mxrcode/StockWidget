@@ -39,6 +39,14 @@ bool Exchange::is_available(const QString &id)
     return false;
 }
 
+QString Exchange::display_name(const QString &id)
+{
+    for (const auto &source : available()) {
+        if (source.first == id) return source.second;
+    }
+    return id;
+}
+
 Exchange *Exchange::create(const QString &id, QNetworkAccessManager *network, QObject *parent)
 {
     if (id == "binance_us") return new BinanceExchange("api.binance.us", network, parent);
@@ -106,6 +114,11 @@ void Exchange::get_each(const QStringList &pairs, std::function<QUrl(const QStri
             if (--state->pending == 0) finish(state->tickers);
         });
     }
+}
+
+double Exchange::change_percent(double open, double last)
+{
+    return open > 0 ? (last - open) / open * 100 : 0;
 }
 
 bool Exchange::split_pair(const QString &pair, QString *base, QString *quote)

@@ -9,6 +9,8 @@ class PoloniexExchange : public Exchange
 public:
     using Exchange::Exchange;
 
+    void load_markets(MarketsCallback callback) override;
+
 protected:
     void do_fetch(const QStringList &pairs) override;
 };

@@ -13,14 +13,18 @@ class KrakenExchange : public Exchange
 public:
     using Exchange::Exchange;
 
+    void load_markets(MarketsCallback callback) override;
+
 protected:
     void do_fetch(const QStringList &pairs) override;
 
 private:
-    void load_asset_pairs(const QStringList &pairs);
+    // Calls done(ok) when m_kraken_names is filled
+    void load_asset_pairs(std::function<void(bool ok)> done);
     void fetch_tickers(const QStringList &pairs);
 
     static QString asset_name(const QString &kraken_asset);
+    static Ticker parse_ticker(const QJsonObject &data);
 
     QHash<QString, QString> m_kraken_names; // "BTC-USD" -> "XXBTZUSD"
 };

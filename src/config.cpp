@@ -19,19 +19,21 @@ Config Config::load()
 
     QFile file(file_path());
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        config.pairs = {"BTC-USDT", "ETH-USDT", "LTC-USDT", "BNB-USDT", "CAKE-USDT"};
+        for (const char *pair : {"BTC-USDT", "ETH-USDT", "LTC-USDT", "BNB-USDT", "CAKE-USDT"}) {
+            config.pairs.append(pair_key(config.data_source, QString::fromLatin1(pair)));
+        }
         if (!config.save()) qInfo() << "Could not create" << file_path();
         return config;
     }
 
-    QStringList pairs;
+    QStringList pair_lines;
     QTextStream stream(&file);
     while (!stream.atEnd()) {
         const QString line = stream.readLine().trimmed();
         if (line.isEmpty() || line.startsWith("//") || line.startsWith("#")) continue;
 
         if (!line.startsWith("$")) {
-            pairs.append(line);
+            pair_lines.append(line);
             continue;
         }
 
@@ -56,11 +58,24 @@ Config Config::load()
             config.data_source = value;
         } else if (key == "error_notifications") {
             config.error_notifications = value.toInt();
+        } else if (key == "color_changes") {
+            config.color_changes = value.toInt();
+        } else if (key == "refresh_interval") {
+            config.refresh_interval = qBound(kMinRefreshInterval, value.toInt(), kMaxRefreshInterval);
         }
         // Other parameters (e.g. the removed $auto_update) are skipped
     }
 
-    config.pairs = normalize_pairs(pairs);
+    // Pairs are resolved at the end : $data_sources may follow them
+    for (const QString &line : pair_lines) {
+        const int colon = line.indexOf(':');
+        const QString source = colon == -1 ? config.data_source : line.left(colon).trimmed().toLower();
+        const QString pair = normalize_pair(colon == -1 ? line : line.mid(colon + 1));
+
+        const QString key = pair_key(source, pair);
+        if (!pair.isEmpty() && !config.pairs.contains(key)) config.pairs.append(key);
+    }
+
     return config;
 }
 
@@ -70,17 +85,19 @@ bool Config::save() const
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
 
     QTextStream fout(&file);
-    fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair." << Qt::endl;
+    fout << "// " << SOFT_NAME << " " << SOFT_VERSION << " : One line - One trading pair (\"exchange:PAIR\" for a non-default exchange)." << Qt::endl;
     fout << Qt::endl;
     fout << "$text_style:" << text_style << Qt::endl;
     fout << "$position:" << position << Qt::endl;
     fout << "$always_on_top:" << int(always_on_top) << Qt::endl;
     fout << "$data_sources:" << data_source << Qt::endl;
     fout << "$error_notifications:" << int(error_notifications) << Qt::endl;
+    fout << "$color_changes:" << int(color_changes) << Qt::endl;
+    fout << "$refresh_interval:" << refresh_interval << Qt::endl;
     fout << Qt::endl;
 
-    for (const QString &pair : pairs) {
-        fout << pair << Qt::endl;
+    for (const QString &key : pairs) {
+        fout << (source_of(key) == data_source ? pair_of(key) : key) << Qt::endl;
     }
 
     fout.flush();
@@ -96,12 +113,35 @@ QString Config::normalize_pair(QString pair)
     return pair;
 }
 
-QStringList Config::normalize_pairs(const QStringList &pairs)
+QString Config::pair_key(const QString &source, const QString &pair)
 {
-    QStringList result;
-    for (const QString &raw : pairs) {
-        const QString pair = normalize_pair(raw);
-        if (!pair.isEmpty() && !result.contains(pair)) result.append(pair);
-    }
-    return result;
+    return source + ":" + pair;
+}
+
+QString Config::source_of(const QString &key)
+{
+    return key.section(':', 0, 0);
+}
+
+QString Config::pair_of(const QString &key)
+{
+    return key.section(':', 1);
+}
+
+bool Config::is_free_position(const QString &position)
+{
+    return position.startsWith('@');
+}
+
+QPoint Config::free_position(const QString &position)
+{
+    const QStringList xy = position.mid(1).split(',');
+    if (xy.size() != 2) return QPoint();
+
+    return QPoint(xy[0].trimmed().toInt(), xy[1].trimmed().toInt());
+}
+
+QString Config::make_free_position(const QPoint &point)
+{
+    return QString("@%1,%2").arg(point.x()).arg(point.y());
 }

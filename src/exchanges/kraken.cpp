@@ -5,11 +5,18 @@
 
 void KrakenExchange::do_fetch(const QStringList &pairs)
 {
-    if (m_kraken_names.isEmpty()) {
-        load_asset_pairs(pairs);
-    } else {
+    if (!m_kraken_names.isEmpty()) {
         fetch_tickers(pairs);
+        return;
     }
+
+    load_asset_pairs([this, pairs](bool ok) {
+        if (ok) {
+            fetch_tickers(pairs);
+        } else {
+            finish(all(pairs, Ticker::network_error()));
+        }
+    });
 }
 
 QString KrakenExchange::asset_name(const QString &kraken_asset)
@@ -19,16 +26,27 @@ QString KrakenExchange::asset_name(const QString &kraken_asset)
     return kraken_asset;
 }
 
-void KrakenExchange::load_asset_pairs(const QStringList &pairs)
+Ticker KrakenExchange::parse_ticker(const QJsonObject &data)
 {
-    get(QUrl("https://api.kraken.com/0/public/AssetPairs"), [this, pairs](const Response &response) {
+    // Arrays are [today, last 24 hours]; "o" is the opening price of the current day (UTC)
+    const double last = number(data["c"].toArray().at(0));
+    const double high = number(data["h"].toArray().at(1));
+    const double low = number(data["l"].toArray().at(1));
+
+    return Ticker::make(last, high, low, change_percent(number(data["o"]), last));
+}
+
+void KrakenExchange::load_asset_pairs(std::function<void(bool ok)> done)
+{
+    get(QUrl("https://api.kraken.com/0/public/AssetPairs"), [this, done](const Response &response) {
         const QJsonObject result = response.json().object()["result"].toObject();
 
         if (!response.ok() || result.isEmpty()) {
-            finish(all(pairs, Ticker::network_error()));
+            done(false);
             return;
         }
 
+        m_kraken_names.clear();
         for (auto it = result.constBegin(); it != result.constEnd(); ++it) {
             // "wsname" : "XBT/USD"
             const QStringList assets = it.value().toObject()["wsname"].toString().split('/');
@@ -37,7 +55,7 @@ void KrakenExchange::load_asset_pairs(const QStringList &pairs)
             m_kraken_names.insert(asset_name(assets[0]) + "-" + asset_name(assets[1]), it.key());
         }
 
-        fetch_tickers(pairs);
+        done(true);
     });
 }
 
@@ -80,20 +98,41 @@ void KrakenExchange::fetch_tickers(const QStringList &pairs)
 
         for (const QString &pair : known_pairs) {
             const QJsonObject data = result[m_kraken_names[pair]].toObject();
-            if (data.isEmpty()) {
-                tickers.insert(pair, Ticker::unknown_pair());
-                continue;
-            }
-
-            // Arrays are [today, last 24 hours]; "o" is the opening price of the current day (UTC)
-            const double last = number(data["c"].toArray().at(0));
-            const double high = number(data["h"].toArray().at(1));
-            const double low = number(data["l"].toArray().at(1));
-            const double open = number(data["o"]);
-            const double change_percent = open > 0 ? (last - open) / open * 100 : 0;
-
-            tickers.insert(pair, Ticker::make(last, high, low, change_percent));
+            tickers.insert(pair, data.isEmpty() ? Ticker::unknown_pair() : parse_ticker(data));
         }
         finish(tickers);
+    });
+}
+
+void KrakenExchange::load_markets(MarketsCallback callback)
+{
+    load_asset_pairs([this, callback](bool ok) {
+        if (!ok) {
+            callback({}, false);
+            return;
+        }
+
+        // Without "pair" Kraken returns the tickers of all pairs
+        get(QUrl("https://api.kraken.com/0/public/Ticker"), [this, callback](const Response &response) {
+            const QJsonObject result = response.json().object()["result"].toObject();
+            if (!response.ok() || result.isEmpty()) {
+                callback({}, false);
+                return;
+            }
+
+            QList<Market> markets;
+            for (auto it = m_kraken_names.constBegin(); it != m_kraken_names.constEnd(); ++it) {
+                const QJsonObject data = result[it.value()].toObject();
+                const Ticker ticker = parse_ticker(data);
+
+                Market market;
+                market.pair = it.key();
+                market.last = ticker.last;
+                market.change_percent = ticker.change_percent;
+                market.quote_volume = number(data["v"].toArray().at(1)) * ticker.last; // "v" is in the base currency
+                markets.append(market);
+            }
+            callback(markets, true);
+        });
     });
 }

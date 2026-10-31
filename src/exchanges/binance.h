@@ -9,6 +9,8 @@ class BinanceExchange : public Exchange
 public:
     BinanceExchange(const QString &domain, QNetworkAccessManager *network, QObject *parent = nullptr);
 
+    void load_markets(MarketsCallback callback) override;
+
 protected:
     void do_fetch(const QStringList &pairs) override;
 
