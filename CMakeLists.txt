@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
-project(StockWidget VERSION 1.3.0 LANGUAGES CXX)
+project(StockWidget VERSION 1.4.3 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -9,21 +9,23 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core Gui Network Concurrent)
-
-include(FetchContent)
-
-FetchContent_Declare(
-  minizip
-  GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng
-  GIT_TAG 4.0.0
-)
-
-FetchContent_MakeAvailable(minizip)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Core Gui Network)
 
 set(PROJECT_SOURCES
         src/main.cpp
+        src/app.h src/app.cpp
+        src/config.h src/config.cpp
+        src/autorun.h src/autorun.cpp
+        src/logger.h src/logger.cpp
+        src/format.h src/format.cpp
+        src/ticker.h
+        src/exchanges/exchange.h src/exchanges/exchange.cpp
+        src/exchanges/binance.h src/exchanges/binance.cpp
+        src/exchanges/bybit.h src/exchanges/bybit.cpp
+        src/exchanges/coinbase.h src/exchanges/coinbase.cpp
+        src/exchanges/kraken.h src/exchanges/kraken.cpp
+        src/exchanges/okx.h src/exchanges/okx.cpp
+        src/exchanges/poloniex.h src/exchanges/poloniex.cpp
         src/mainwindow.cpp src/mainwindow.h src/mainwindow.ui
         src/configurator.h src/configurator.cpp src/configurator.ui
         src/aboutqt.h src/aboutqt.cpp src/aboutqt.ui
@@ -40,7 +42,15 @@ qt_add_executable(StockWidget
     ${PROJECT_SOURCES}
 )
 
-target_link_libraries(StockWidget PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent minizip)
+target_include_directories(StockWidget PRIVATE src)
+target_compile_definitions(StockWidget PRIVATE STOCKWIDGET_VERSION="${PROJECT_VERSION}")
+
+target_link_libraries(StockWidget PRIVATE Qt6::Widgets Qt6::Core Qt6::Gui Qt6::Network)
+
+if(WIN32)
+    # IShellLink for the autorun shortcut
+    target_link_libraries(StockWidget PRIVATE ole32 uuid)
+endif()
 
 set_target_properties(StockWidget PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -50,10 +60,11 @@ set_target_properties(StockWidget PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+include(GNUInstallDirs)
+
 install(TARGETS StockWidget
     BUNDLE DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(StockWidget)
-endif()
+qt_finalize_executable(StockWidget)

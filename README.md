@@ -1,22 +1,20 @@
 # StockWidget
 Widget for displaying the exchange rate of cryptocurrencies on the desktop in real time.
 
-![image](https://user-images.githubusercontent.com/123785508/230630082-d0c5a3b0-bf7c-459c-928e-faccf5047a45.png)
-
-This is how the configurator will look like in the new version of the widget (1.1.0).
+<img width="811" height="837" alt="image" src="https://github.com/user-attachments/assets/23bff74a-5d1a-4230-9005-47beb40f0226" />
 
 **List of supported cryptocurrency exchanges (API):**
 - Binance Global
-- Binance US
+- Binance US *(available only from the USA)*
+- Bybit
 - Coinbase
 - Kraken
+- OKX
 - Poloniex
 
-*Due to the limits set by the exchange, the program cannot receive data more than once every 60sec. These restrictions can be removed by using WebSocket or the developer's servers (Which we don't have).*
+*Data is refreshed every 60 seconds by default, the interval can be changed in the settings.*
 
 ## Installation
-
-*Dependencies must be installed in the system for the program to run and work correctly.*
 
 - Download latest version of the widget https://github.com/mxrcode/StockWidget/releases
 - Unpack the **.zip** archive to any place convenient for you
@@ -24,7 +22,30 @@ This is how the configurator will look like in the new version of the widget (1.
 
 *An icon should appear in the tray by clicking on which a menu for interacting with the widget will appear. There you can configure it and add the program to autorun.*
 
-**Dependencies:** [vcredist_x64(2015-2022)](https://aka.ms/vs/17/release/vc_redist.x64.exe) [(x86)](https://aka.ms/vs/17/release/vc_redist.x86.exe) 
+## Usage
+
+- **Pairs** : choose an exchange, search its pairs and add them to the widget. Each pair keeps its own exchange, so the widget can show BTC from Binance next to ETH-EUR from Kraken. Drag the pairs to change their order. Uncheck a pair to hide it from the widget without removing it: add BTC-USDT from Binance and OKX once, then switch between them with the checkboxes.
+- **Appearance** : screen corner, text color, green / red price changes. The widget can also be dragged anywhere with the mouse (grab it by the text).
+- **Other** : refresh interval (10 seconds to 10 minutes), always on top, error notifications.
+
+The settings are stored in `config.cfg` next to the executable: one trading pair per line (`BTC-USDT`, or `kraken_com:ETH-EUR` for a pair from another exchange than `$data_sources`, `#off:BTC-USDT` for a hidden pair), options start with `$`. The log is written to `qInfo.log` in the same folder.
+
+## Building
+
+Requires Qt 6.5 or newer (developed with Qt 6.12, MinGW 64-bit, installed with the Qt Online Installer: the MinGW, CMake and Ninja tools are taken from `C:\Qt\Tools`).
+
+**Release package** : run `deploy.cmd` (or `.\deploy.ps1 -QtDir C:\Qt\6.12.0\mingw_64` for another Qt kit). It builds the Release version and creates `build\StockWidget-<version>-win64.zip` with all the required DLLs, plus a `.sha256` file for the release notes. The version is taken from `project(VERSION)` in `CMakeLists.txt`.
+
+**Manual build** :
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/mingw_64
+cmake --build build
+windeployqt --release --no-translations build/StockWidget.exe
+```
+
+Or open `CMakeLists.txt` in Qt Creator.
 
 # License
 This software is released under the LGPL-3.0 License, see LICENSE.
+
+The Roboto font (`resources/fonts`) is licensed under the Apache License 2.0, see `resources/fonts/LICENSE-Roboto.txt`.
