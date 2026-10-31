@@ -30,8 +30,11 @@ The settings are stored in `config.cfg` next to the executable: one trading pair
 
 ## Building
 
-Requires Qt 6.5 or newer (developed with Qt 6.12, MinGW 64-bit) and CMake 3.16+.
+Requires Qt 6.5 or newer (developed with Qt 6.12, MinGW 64-bit, installed with the Qt Online Installer: the MinGW, CMake and Ninja tools are taken from `C:\Qt\Tools`).
 
+**Release package** : run `deploy.cmd` (or `.\deploy.ps1 -QtDir C:\Qt\6.12.0\mingw_64` for another Qt kit). It builds the Release version and creates `build\StockWidget-<version>-win64.zip` with all the required DLLs, plus a `.sha256` file for the release notes. The version is taken from `project(VERSION)` in `CMakeLists.txt`.
+
+**Manual build** :
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/mingw_64
 cmake --build build
