@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(StockWidget VERSION 1.4.1 LANGUAGES CXX)
+project(StockWidget VERSION 1.4.2 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -21,8 +21,10 @@ set(PROJECT_SOURCES
         src/ticker.h
         src/exchanges/exchange.h src/exchanges/exchange.cpp
         src/exchanges/binance.h src/exchanges/binance.cpp
+        src/exchanges/bybit.h src/exchanges/bybit.cpp
         src/exchanges/coinbase.h src/exchanges/coinbase.cpp
         src/exchanges/kraken.h src/exchanges/kraken.cpp
+        src/exchanges/okx.h src/exchanges/okx.cpp
         src/exchanges/poloniex.h src/exchanges/poloniex.cpp
         src/mainwindow.cpp src/mainwindow.h src/mainwindow.ui
         src/configurator.h src/configurator.cpp src/configurator.ui

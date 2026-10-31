@@ -1,7 +1,9 @@
 #include "exchange.h"
 #include "binance.h"
+#include "bybit.h"
 #include "coinbase.h"
 #include "kraken.h"
+#include "okx.h"
 #include "poloniex.h"
 #include "version.h"
 
@@ -25,8 +27,10 @@ QList<QPair<QString, QString>> Exchange::available()
     return {
         {"binance_com", "Binance Global"},
         {"binance_us", "Binance US"},
+        {"bybit_com", "Bybit"},
         {"coinbase_com", "Coinbase"},
         {"kraken_com", "Kraken"},
+        {"okx_com", "OKX"},
         {"poloniex_com", "Poloniex"},
     };
 }
@@ -50,8 +54,10 @@ QString Exchange::display_name(const QString &id)
 Exchange *Exchange::create(const QString &id, QNetworkAccessManager *network, QObject *parent)
 {
     if (id == "binance_us") return new BinanceExchange("api.binance.us", network, parent);
+    if (id == "bybit_com") return new BybitExchange(network, parent);
     if (id == "coinbase_com") return new CoinbaseExchange(network, parent);
     if (id == "kraken_com") return new KrakenExchange(network, parent);
+    if (id == "okx_com") return new OkxExchange(network, parent);
     if (id == "poloniex_com") return new PoloniexExchange(network, parent);
 
     return new BinanceExchange("api.binance.com", network, parent);

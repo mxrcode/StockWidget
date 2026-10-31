@@ -6,8 +6,10 @@ Widget for displaying the exchange rate of cryptocurrencies on the desktop in re
 **List of supported cryptocurrency exchanges (API):**
 - Binance Global
 - Binance US *(available only from the USA)*
+- Bybit
 - Coinbase
 - Kraken
+- OKX
 - Poloniex
 
 *Data is refreshed every 60 seconds by default, the interval can be changed in the settings.*
