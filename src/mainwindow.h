@@ -1,63 +1,20 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "version.h"
+#include "ticker.h"
 
 #include <QMainWindow>
-#include <QWidget>
-#include <QPushButton>
-#include <QApplication>
-#include <QUrl>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QLabel>
-#include <QTimer>
+#include <QStringList>
 #include <QVector>
-#include <QMap>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QScreen>
-#include <QFile>
-#include <QSize>
-#include <QPainter>
-#include <QSize>
-#include <QTextOption>
-#include <QPointF>
-#include <QSystemTrayIcon>
-#include <QMenu>
-#include <QDir>
-#include <QPixmap>
-#include <QIcon>
-#include <QProcess>
-#include <QDialog>
-#include <QMessageBox>
-#include <QThread>
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
-#include <QNetworkReply>
-#include <QStandardPaths>
 
-#include <QFontDatabase>
-
-#include "qvlabel.hpp"
-
-#include "configurator.h"
-#include "aboutqt.h"
-#include "aboutme.h"
-#include "warningui.h"
-
-#include <string>
-
-#ifdef Q_OS_WIN
-    #include <windows.h>
-    #include <shlobj.h>
-#endif
+class QLabel;
+class QVLabel;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+// The widget itself : one row per trading pair, placed in a corner of the primary screen
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -65,8 +22,36 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void set_pairs(const QStringList &pairs, const QString &text_style);
+    void show_tickers(const TickerMap &tickers);
+    void set_always_on_top(bool enabled);
+
+    // About : position
+    // ⌜¯¯¯¯¯¯¯¯¯¯¯¯⌝
+    // | 0,0    0,1 |
+    // |            |
+    // | D1,0   1,1 |
+    // ⌞____________⌟
+    void place(const QString &position);
+
+private:
+    struct Row {
+        QString pair;
+        QLabel *symbol;
+        QLabel *price;
+        QLabel *price_high_low;
+        QLabel *price_change_percent;
+        QVLabel *high_low_difference;
+    };
+
+    void clear_rows();
+    void show_status(const Row &row, const QString &base, const QString &text);
+    void place_on_screen();
+
     Ui::MainWindow *ui;
-    void icon_taskbar_hider();
+    QVector<Row> m_rows;
+    QString m_position = "1,0";
 };
 
 #endif // MAINWINDOW_H

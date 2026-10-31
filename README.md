@@ -3,20 +3,16 @@ Widget for displaying the exchange rate of cryptocurrencies on the desktop in re
 
 ![image](https://user-images.githubusercontent.com/123785508/230630082-d0c5a3b0-bf7c-459c-928e-faccf5047a45.png)
 
-This is how the configurator will look like in the new version of the widget (1.1.0).
-
 **List of supported cryptocurrency exchanges (API):**
 - Binance Global
-- Binance US
+- Binance US *(available only from the USA)*
 - Coinbase
 - Kraken
 - Poloniex
 
-*Due to the limits set by the exchange, the program cannot receive data more than once every 60sec. These restrictions can be removed by using WebSocket or the developer's servers (Which we don't have).*
+*Data is refreshed once every 60 seconds (15 seconds after a network error).*
 
 ## Installation
-
-*Dependencies must be installed in the system for the program to run and work correctly.*
 
 - Download latest version of the widget https://github.com/mxrcode/StockWidget/releases
 - Unpack the **.zip** archive to any place convenient for you
@@ -24,7 +20,21 @@ This is how the configurator will look like in the new version of the widget (1.
 
 *An icon should appear in the tray by clicking on which a menu for interacting with the widget will appear. There you can configure it and add the program to autorun.*
 
-**Dependencies:** [vcredist_x64(2015-2022)](https://aka.ms/vs/17/release/vc_redist.x64.exe) [(x86)](https://aka.ms/vs/17/release/vc_redist.x86.exe) 
+The settings are stored in `config.cfg` next to the executable: one trading pair per line (`BTC-USDT`), options start with `$`. The log is written to `qInfo.log` in the same folder.
+
+## Building
+
+Requires Qt 6.5 or newer (developed with Qt 6.12, MinGW 64-bit) and CMake 3.16+.
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/mingw_64
+cmake --build build
+windeployqt --release --no-translations build/StockWidget.exe
+```
+
+Or open `CMakeLists.txt` in Qt Creator.
 
 # License
 This software is released under the LGPL-3.0 License, see LICENSE.
+
+The Roboto font (`resources/fonts`) is licensed under the Apache License 2.0, see `resources/fonts/LICENSE-Roboto.txt`.
