@@ -117,6 +117,8 @@ Configurator::Configurator(QWidget *parent) :
 
 Configurator::~Configurator()
 {
+    // Before the network manager and the ui : no late replies
+    qDeleteAll(m_exchanges);
     delete ui;
 }
 
@@ -170,6 +172,12 @@ void Configurator::set_position(const QString &position)
     } else { // 1,0 : Default
         ui->bottomLeft_radioButton->setChecked(true);
     }
+}
+
+void Configurator::set_always_on_top(bool enabled)
+{
+    m_config.always_on_top = enabled;
+    ui->always_on_top_checkBox->setChecked(enabled);
 }
 
 QString Configurator::current_source() const

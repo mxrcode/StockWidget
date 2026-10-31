@@ -29,8 +29,9 @@ public:
 
     void set_config(const Config &config);
 
-    // The widget was dragged while the window is open
+    // Changes made outside of the window while it is open (dragging the widget, tray menu)
     void set_position(const QString &position);
+    void set_always_on_top(bool enabled);
 
 signals:
     void applied(const Config &config);

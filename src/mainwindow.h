@@ -8,6 +8,7 @@
 #include <QVector>
 
 class QLabel;
+class QScreen;
 class QVLabel;
 
 QT_BEGIN_NAMESPACE
@@ -63,6 +64,7 @@ private:
     void show_status(Row &row, const QString &base, const QString &text);
     void flash(QLabel *label, const QString &color);
     void place_on_screen();
+    void move_inside(QScreen *screen, const QPoint &point);
 
     Ui::MainWindow *ui;
     QVector<Row> m_rows;

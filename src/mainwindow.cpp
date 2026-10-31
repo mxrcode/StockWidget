@@ -83,6 +83,7 @@ void MainWindow::set_pairs(const QStringList &keys, const QString &text_style)
         QLabel *label = new QLabel("Loading...");
         label->setFont(roboto(point_size));
         label->setStyleSheet(text_style);
+        label->setTextInteractionFlags(Qt::NoTextInteraction); // Mouse events go to the window (dragging)
         layout->addWidget(label);
         return label;
     };
@@ -189,6 +190,8 @@ void MainWindow::show_tickers(const TickerMap &tickers)
 
 void MainWindow::set_always_on_top(bool enabled)
 {
+    if (isVisible() && windowFlags().testFlag(Qt::WindowStaysOnTopHint) == enabled) return;
+
     // Changing the flags hides the window
     setWindowFlag(Qt::WindowStaysOnTopHint, enabled);
     show();
@@ -208,10 +211,9 @@ void MainWindow::place_on_screen()
 
         // The monitor may have been disconnected : fall back to the default corner
         QScreen *screen = QGuiApplication::screenAt(point + QPoint(width() / 2, height() / 2));
+        if (!screen) screen = QGuiApplication::screenAt(point);
         if (screen) {
-            const QRect area = screen->availableGeometry();
-            move(qBound(area.left(), point.x(), area.left() + area.width() - (width() - kRightInset)),
-                 qBound(area.top(), point.y(), area.top() + area.height() - height()));
+            move_inside(screen, point);
             return;
         }
     }
@@ -232,6 +234,13 @@ void MainWindow::place_on_screen()
     } else { // 1,0 : Default
         move(left, bottom);
     }
+}
+
+void MainWindow::move_inside(QScreen *screen, const QPoint &point)
+{
+    const QRect area = screen->availableGeometry();
+    move(qBound(area.left(), point.x(), area.left() + area.width() - (width() - kRightInset)),
+         qBound(area.top(), point.y(), area.top() + area.height() - height()));
 }
 
 // Only the text is clickable, the transparent part of the window lets the clicks through
@@ -267,8 +276,9 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
     m_dragging = false;
     unsetCursor();
 
-    m_position = Config::make_free_position(pos());
-    place_on_screen(); // Keep it inside the screen
+    // Keep it inside the screen where it was dropped
+    QScreen *screen = QGuiApplication::screenAt(event->globalPosition().toPoint());
+    move_inside(screen ? screen : QGuiApplication::primaryScreen(), pos());
     m_position = Config::make_free_position(pos());
 
     emit moved(m_position);

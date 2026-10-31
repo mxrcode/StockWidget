@@ -62,6 +62,7 @@ void App::build_tray_menu()
     connect(m_always_on_top_action, &QAction::triggered, this, [this](bool checked) {
         m_config.always_on_top = checked;
         m_widget.set_always_on_top(checked);
+        m_configurator.set_always_on_top(checked);
         save_config();
     });
 
@@ -111,6 +112,8 @@ void App::apply_config(const Config &config)
     m_widget.set_color_changes(m_config.color_changes);
     if (pairs_changed) {
         m_widget.set_pairs(m_config.pairs, m_config.text_style);
+    } else if (m_pending_exchanges == 0) {
+        m_widget.show_tickers(m_round_tickers); // Redraw with the new colors
     }
     m_widget.place(m_config.position);
 
@@ -187,7 +190,20 @@ void App::refresh()
 
     m_pending_exchanges = pairs_by_source.size();
     for (auto it = pairs_by_source.constBegin(); it != pairs_by_source.constEnd(); ++it) {
-        m_exchanges[it.key()]->fetch(it.value());
+        Exchange *exchange = m_exchanges[it.key()];
+
+        // Should not happen : rounds do not overlap. Do not wait for a reply that will not come.
+        if (exchange->is_busy()) {
+            qInfo() << it.key() << "is still busy, skipped";
+            TickerMap tickers;
+            for (const QString &pair : it.value()) {
+                tickers.insert(pair, Ticker::network_error());
+            }
+            on_exchange_finished(it.key(), tickers);
+            continue;
+        }
+
+        exchange->fetch(it.value());
     }
 }
 
