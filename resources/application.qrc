@@ -5,4 +5,7 @@
         <file>../img/icon-bg.svg</file>
         <file>../img/down_arrow.svg</file>
     </qresource>
+    <qresource prefix="/fonts">
+        <file alias="Roboto-Regular.ttf">fonts/Roboto-Regular.ttf</file>
+    </qresource>
 </RCC>

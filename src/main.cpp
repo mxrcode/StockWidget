@@ -3,22 +3,6 @@
 
 bool g_error_notifications = 1;
 
-QByteArray get_hwid() {
-    return QSysInfo::machineUniqueId();
-}
-
-QString get_client_id() {
-    return "client[" + QCryptographicHash::hash(get_hwid(), QCryptographicHash::Blake2b_512).toHex() + "]";
-}
-
-long version_convert(QString version) {
-    QStringList parts = version.split(".");
-    int major = parts.at(0).toInt();
-    int minor = parts.at(1).toInt();
-    int patch = parts.at(2).toInt();
-    return major * 1000000 + minor * 10000 + patch * 100;
-}
-
 QByteArray http_request(QUrl url, bool &network_status, QString user_agent = SOFT_NAME + " " + SOFT_VERSION) {
 
     // Create a network manager.
@@ -50,67 +34,6 @@ QByteArray http_request(QUrl url, bool &network_status, QString user_agent = SOF
     reply->deleteLater();
 
     return data;
-}
-
-struct UpdateInfo {
-    QString status;
-    QString endpoint;
-    long latest_version;
-    QString latest_version_string;
-    bool update_available;
-    QString update_url;
-    QString update_url_sha256;
-    QString user_ip;
-};
-
-UpdateInfo getUpdateInfo()
-{
-    UpdateInfo info;
-
-    try {
-
-        bool network_status = 0;
-
-        QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[get_update_info]";
-
-        QByteArray data = http_request(QUrl("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/v1/getUpdate"), network_status, user_agent);
-
-        QJsonDocument json_doc = QJsonDocument::fromJson(data);
-        QJsonObject json_obj = json_doc.object();
-
-        QString status = json_obj.value("status").toString();
-
-        if (status == "OK") {
-            // Get values from JSON object
-            info.status = status;
-            info.endpoint = json_obj.value("endpoint").toString();
-            info.latest_version = json_obj.value("latest_version").toInt();
-            info.latest_version_string = json_obj.value("latest_version_string").toString();
-            info.update_available = (bool)json_obj.value("update_available").toString().toInt();
-            info.update_url = json_obj.value("update_url").toString();
-            info.update_url_sha256 = json_obj.value("update_url_sha256").toString();
-            info.user_ip = json_obj.value("user-ip").toString();
-        }
-
-    } catch (...) {
-    }
-
-    return info;
-}
-
-QString sha256_by_link(QString s_url) {
-
-    bool network_status = 0;
-
-    QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[download_sha256]";
-
-    QString t_sha256 = http_request(QUrl(s_url), network_status, user_agent);
-
-    int length = t_sha256.indexOf(" ");
-    QString sha256 = t_sha256.left(length);
-
-    return sha256.trimmed();
-
 }
 
 QString digit_format_d (double value, int decimal = 0) {
@@ -644,71 +567,14 @@ QMap<QString, QMap<QString, QString>> get_exchange_data(QString current_sources,
     return output;
 }
 
-bool check_font(QString font_name) {
-    QString font_path = QDir::currentPath() + "/" + font_name;
-    QFile font_file(font_path);
-    return font_file.exists();
-}
-
-void font_download(QString font_name) {
-
-    QUrl url("https://a8de92e8b7b48f080daaf1b0900c0632.block17.icu/api/storage/Roboto.ttf");
-
-    QNetworkAccessManager manager;
-    QNetworkRequest request(url);
-    QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[download_font]";
-    request.setRawHeader("User-Agent", user_agent.toUtf8());
-    QNetworkReply *reply = manager.get(request);
-
-    // Wait for the request to complete
-    QEventLoop eventLoop;
-    QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
-    eventLoop.exec();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        qInfo() << "Error downloading font:" << reply->errorString();
-        return;
-    }
-
-    QString font_path = QDir::currentPath() + "/" + font_name;
-
-    if (reply->error() == QNetworkReply::NoError) {
-        QFile font_file(font_path);
-        if (font_file.open(QIODevice::WriteOnly)) {
-            font_file.write(reply->readAll());
-            font_file.close();
-        }
-    }
-
-    reply->deleteLater();
-
-    return;
-}
-
-bool load_font(const QString& font_path)
-{
-    QFontDatabase font_db;
-
-    int id = font_db.addApplicationFont(font_path);
-
-    if (id == -1) return false;
-
-    QStringList font_families = font_db.applicationFontFamilies(id);
-
-    return true;
-}
-
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
     qInstallMessageHandler(message_handler); // Output debug info to qInfo.log
 
-    QString font_file_path = "Roboto.ttf";
-    if (!check_font(font_file_path)) font_download(font_file_path); // Checking for the "Roboto.ttf" file
-
-    if (!load_font(font_file_path)) {
-        qInfo() << "Error loading font \"Roboto.ttf\"";
+    if (QFontDatabase::addApplicationFont(":/fonts/Roboto-Regular.ttf") == -1) {
+        qInfo() << "Error loading font \"Roboto-Regular.ttf\"";
     }
 
     // Create the main window
@@ -716,35 +582,9 @@ int main(int argc, char *argv[])
     Ui::MainWindow *ui = mainWindow.ui;
     mainWindow.show();
 
-    // Update Block : if the filename of the current instance is new.exe, move me from new.exe to StockWidget.exe (with 1 second sleep)
-    if (qApp->applicationName() == "new") {
-
-        QThread::msleep(3000);
-
-        // Remove the old version CONFIG_NAME.
-        file_remover(CONFIG_NAME);
-
-        QString current_file = qApp->applicationFilePath();
-        QFile file(current_file);
-        QString new_file = "StockWidget.exe";
-
-        file_remover(new_file);
-
-        if (file.rename(new_file)) {
-            qInfo() << "File renamed successfully.";
-        } else {
-            qInfo() << "File rename failed.";
-        }
-        // Start a new instance of the application with close current
-        QProcess::startDetached(qApp->applicationDirPath() + "/StockWidget.exe");
-
-        return 0;
-    }
-
     QString text_style = "color:rgba(255, 255, 255, 0.65);";
     QString widget_position = "1,0";
 
-    bool auto_update = 1;
     bool always_on_top = 0;
 
     QString data_sources_current = "binance_com";
@@ -777,18 +617,6 @@ int main(int argc, char *argv[])
                 tmp.replace("$position:", "");
 
                 widget_position = tmp;
-
-                continue;
-            }
-            if (tmp.startsWith("$auto_update:")) {
-
-                // Delete comments after "//"
-                int index = tmp.indexOf("//");
-                if (index != -1) tmp = tmp.left(index);
-
-                tmp.replace("$auto_update:", "");
-
-                auto_update = tmp.toInt();
 
                 continue;
             }
@@ -852,7 +680,6 @@ int main(int argc, char *argv[])
             fout << Qt::endl;
             fout << "$text_style:color:rgba(255, 255, 255, 0.65);" << Qt::endl;
             fout << "$position:" << widget_position << Qt::endl;
-            fout << "$auto_update:" << "1" << Qt::endl;
             fout << "$always_on_top:" << "0" << Qt::endl;
             fout << "$data_sources:" << data_sources_current << Qt::endl;
             fout << "$error_notifications:" << g_error_notifications << Qt::endl;
@@ -992,106 +819,6 @@ int main(int argc, char *argv[])
     trayIcon.setIcon(icon);
 
     trayIcon.show();
-
-    // Auto-Update Block
-    UpdateInfo info = getUpdateInfo();
-
-    QFuture<int> future_update = QtConcurrent::run([&]() {
-
-        QThread::msleep(1000);
-
-        try {
-            if (info.update_available == true && version_convert(SOFT_VERSION) < info.latest_version && auto_update == 1) { // Rewrite for async use
-
-                QNetworkAccessManager manager;
-                QNetworkRequest request(QUrl(info.update_url));
-                QString user_agent = SOFT_NAME + " " + SOFT_VERSION + " " + get_client_id() + " action[download_update]";
-                request.setRawHeader("User-Agent", user_agent.toUtf8());
-                QNetworkReply *reply = manager.get(request);
-
-                // Wait for the request to complete
-                QEventLoop eventLoop;
-                QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
-                eventLoop.exec();
-
-                if (reply->error() != QNetworkReply::NoError) {
-                    qInfo() << "Error downloading file:" << reply->errorString();
-                    return -1;
-                }
-
-                QByteArray zip_data = reply->readAll();
-                QTemporaryFile temp_file;
-                if (!temp_file.open()) {
-                    qInfo() << "Error creating temp file:" << temp_file.errorString();
-                    return -1;
-                }
-                temp_file.write(zip_data);
-                temp_file.close();
-
-                // Calculate SHA256 of the downloaded zip file
-                QCryptographicHash hash(QCryptographicHash::Sha256);
-                hash.addData(zip_data);
-                QString calculated_sha256 = hash.result().toHex();
-
-                // Compare calculated sha256 with the sha256 from the update info
-                if (calculated_sha256 != sha256_by_link(info.update_url_sha256)) {
-                    qInfo() << "SHA256 doesn't match. Downloaded file might be corrupted.";
-                    return -1;
-                }
-
-                unzFile zip_file = unzOpen(temp_file.fileName().toUtf8().constData());
-
-                int ret = unzLocateFile(zip_file, "new.exe", 0);
-                if (ret != UNZ_OK) {
-                    qInfo() << "Error locating new.exe in zip archive";
-                    unzClose(zip_file);
-                    return -1;
-                }
-
-                ret = unzOpenCurrentFile(zip_file);
-                if (ret != UNZ_OK) {
-                    qInfo() << "Error opening new.exe in zip archive";
-                    unzClose(zip_file);
-                    return -1;
-                }
-
-                QFile outFile("new.exe");
-                if (!outFile.open(QIODevice::WriteOnly)) {
-                    qInfo() << "Error creating file new.exe";
-                    unzCloseCurrentFile(zip_file);
-                    unzClose(zip_file);
-                    return -1;
-                }
-
-                char buffer[4096];
-                int readBytes;
-                do {
-                    readBytes = unzReadCurrentFile(zip_file, buffer, sizeof(buffer));
-                    if (readBytes < 0) {
-                        qInfo() << "Error reading new.exe from zip archive";
-                        unzCloseCurrentFile(zip_file);
-                        unzClose(zip_file);
-                        outFile.close();
-                        return -1;
-                    }
-                    outFile.write(buffer, readBytes);
-                } while (readBytes > 0);
-
-                unzCloseCurrentFile(zip_file);
-                unzClose(zip_file);
-                outFile.close();
-
-                // Start a new instance of the application with close current
-                QProcess::startDetached(qApp->applicationDirPath() + "/new.exe");
-
-                qApp->exit(0);
-
-            }
-        } catch (...) {
-        }
-
-        return 0;
-    });
 
     const int mainWindow_width = 420;
 

@@ -36,9 +36,6 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QTemporaryFile>
-#include <QtConcurrent>
-#include <QCryptographicHash>
 #include <QStandardPaths>
 
 #include <QFontDatabase>
@@ -56,8 +53,6 @@
     #include <windows.h>
     #include <shlobj.h>
 #endif
-
-#include <unzip.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

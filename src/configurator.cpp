@@ -146,8 +146,8 @@ Configurator::Configurator(QWidget *parent) :
         t_text_style.replace("0.65", "1"); // Change Opacity for visual color accuracy
         ui->currentColor_label->setStyleSheet(ui->currentColor_label->styleSheet() + t_text_style);
 
-        // Auto Update
-        ui->auto_update_checkBox->setChecked(m_auto_update.toInt());
+        // Auto Update has been removed
+        ui->auto_update_checkBox->hide();
 
         warning_ui = new WarningUi;
         connect(this, &Configurator::setWarningUiText, warning_ui, &WarningUi::setTextBrowser);

@@ -16,7 +16,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    QThreadPool::globalInstance()->clear();
     delete ui;
 }
 

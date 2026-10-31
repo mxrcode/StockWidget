@@ -9,18 +9,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Gui Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core Gui Network Concurrent)
-
-include(FetchContent)
-
-FetchContent_Declare(
-  minizip
-  GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng
-  GIT_TAG 4.0.0
-)
-
-FetchContent_MakeAvailable(minizip)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Core Gui Network)
 
 set(PROJECT_SOURCES
         src/main.cpp
@@ -40,7 +29,7 @@ qt_add_executable(StockWidget
     ${PROJECT_SOURCES}
 )
 
-target_link_libraries(StockWidget PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent minizip)
+target_link_libraries(StockWidget PRIVATE Qt6::Widgets Qt6::Core Qt6::Gui Qt6::Network)
 
 set_target_properties(StockWidget PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -54,6 +43,4 @@ install(TARGETS StockWidget
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(StockWidget)
-endif()
+qt_finalize_executable(StockWidget)
